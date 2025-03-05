@@ -2,11 +2,8 @@
 import React, { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from "./ui/button";
+import { Button } from "@/components/ui/button"
 import axios from "axios";
-// Add this import for KML to GeoJSON conversion
-// Make sure to install: npm install @tmcw/togeojson
-import { kml } from "@tmcw/togeojson";
 
 const INITIAL_CENTER: [number, number] = [69.3451, 30.3753];
 const INITIAL_ZOOM = 3.9;
@@ -18,7 +15,6 @@ export const MapBox = () => {
   const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
   const [region, setRegion] = useState(""); // State for the search input
-  const [kmlLoaded, setKmlLoaded] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -95,7 +91,7 @@ export const MapBox = () => {
       container: mapContainerRef.current,
       center: center,
       zoom: zoom,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
     });
 
     if (mapRef.current) {
@@ -130,7 +126,6 @@ export const MapBox = () => {
       if (mapRef.current.getSource('region-boundary')) {
         mapRef.current.removeSource('region-boundary');
       }
-      setKmlLoaded(false);
     }
   };
 
@@ -230,8 +225,6 @@ export const MapBox = () => {
               padding: 50
             });
           }
-          
-          setKmlLoaded(true);
         } else {
           // Fall back to the simple square if no boundary found
           mapRef.current?.addSource("region-boundary", {
@@ -276,7 +269,6 @@ export const MapBox = () => {
           });
           
           setError("Detailed boundary not available. Using approximate area.");
-          setKmlLoaded(true);
         }
       } else {
         setError("Could not find the region");
@@ -287,195 +279,6 @@ export const MapBox = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Function to process KML file
-  const processKmlFile = async (file: File): Promise<GeoJSON.FeatureCollection | null> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          if (!e.target || !e.target.result) {
-            reject(new Error("Failed to read file"));
-            return;
-          }
-          
-          const kmlText = e.target.result as string;
-          const kmlDom = new DOMParser().parseFromString(kmlText, 'text/xml');
-          const geojson = kml(kmlDom) as GeoJSON.FeatureCollection;
-          resolve(geojson);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      reader.onerror = () => reject(new Error("Error reading file"));
-      reader.readAsText(file);
-    });
-  };
-
-  // Function to handle KML file upload
-  const handleKmlFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) return;
-    
-    const file = e.target.files[0];
-    setLoading(true);
-    setError("");
-    
-    try {
-      const geojson = await processKmlFile(file);
-      
-      // Remove existing boundary layers
-      removeExistingBoundaries();
-      
-      // Add the KML data to the map
-      if (mapRef.current && geojson) {
-        // Add source
-        mapRef.current.addSource("region-boundary", {
-          type: "geojson",
-          data: geojson
-        });
-        
-        // Add fill layer for polygons
-        mapRef.current.addLayer({
-          id: "region-boundary",
-          type: "fill",
-          source: "region-boundary",
-          layout: {},
-          paint: {
-            "fill-color": "#0080ff",
-            "fill-opacity": 0.3,
-          },
-          filter: ["==", "$type", "Polygon"]
-        });
-        
-        // Add line layer for all geometries
-        mapRef.current.addLayer({
-          id: "region-outline",
-          type: "line",
-          source: "region-boundary",
-          layout: {},
-          paint: {
-            "line-color": "#000",
-            "line-width": 2,
-          }
-        });
-        
-        // Fit the map to the KML bounds
-        const bounds = getBoundsFromGeoJson(geojson);
-        if (bounds) {
-          mapRef.current.fitBounds(bounds as mapboxgl.LngLatBoundsLike, {
-            padding: 50
-          });
-        }
-        
-        setKmlLoaded(true);
-      }
-    } catch (error) {
-      console.error("Error processing KML file:", error);
-      setError("Failed to process KML file");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to handle KML download
-  const handleDownloadKml = () => {
-    if (!mapRef.current) return;
-    
-    try {
-      // Get the GeoJSON data from the map
-      const source = mapRef.current.getSource('region-boundary') as mapboxgl.GeoJSONSource;
-      
-      // We need to access the _data property which is technically private
-      // This is a bit of a hack but works for simple cases
-      // In a production app, you might want to store the original GeoJSON in state
-      const sourceData = (source as any)._data;
-      
-      if (!sourceData) {
-        setError("No data to download");
-        return;
-      }
-      
-      // Convert GeoJSON to KML
-      // This is a simple approach - for complex conversions you may need a library
-      let kmlContent = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      kmlContent += '<kml xmlns="http://www.opengis.net/kml/2.2">\n';
-      kmlContent += '<Document>\n';
-      kmlContent += '  <name>Map Export</name>\n';
-      
-      // Process features
-      if (sourceData.features) {
-        sourceData.features.forEach((feature: GeoJSON.Feature, index: number) => {
-          kmlContent += `  <Placemark>\n`;
-          kmlContent += `    <name>Feature ${index + 1}</name>\n`;
-          
-          if (feature.geometry.type === 'Polygon') {
-            kmlContent += '    <Polygon>\n';
-            kmlContent += '      <outerBoundaryIs>\n';
-            kmlContent += '        <LinearRing>\n';
-            kmlContent += '          <coordinates>\n';
-            
-            // Convert coordinates to KML format (lon,lat,alt)
-            const coords = feature.geometry.coordinates[0];
-            coords.forEach((coord: number[]) => {
-              kmlContent += `            ${coord[0]},${coord[1]},0\n`;
-            });
-            
-            kmlContent += '          </coordinates>\n';
-            kmlContent += '        </LinearRing>\n';
-            kmlContent += '      </outerBoundaryIs>\n';
-            kmlContent += '    </Polygon>\n';
-          }
-          
-          kmlContent += '  </Placemark>\n';
-        });
-      } else if (sourceData.geometry && sourceData.geometry.type === 'Polygon') {
-        kmlContent += `  <Placemark>\n`;
-        kmlContent += `    <name>Region</name>\n`;
-        kmlContent += '    <Polygon>\n';
-        kmlContent += '      <outerBoundaryIs>\n';
-        kmlContent += '        <LinearRing>\n';
-        kmlContent += '          <coordinates>\n';
-        
-        // Convert coordinates to KML format (lon,lat,alt)
-        const coords = sourceData.geometry.coordinates[0];
-        coords.forEach((coord: number[]) => {
-          kmlContent += `            ${coord[0]},${coord[1]},0\n`;
-        });
-        
-        kmlContent += '          </coordinates>\n';
-        kmlContent += '        </LinearRing>\n';
-        kmlContent += '      </outerBoundaryIs>\n';
-        kmlContent += '    </Polygon>\n';
-        kmlContent += '  </Placemark>\n';
-      }
-      
-      kmlContent += '</Document>\n';
-      kmlContent += '</kml>';
-      
-      // Create a download link
-      const blob = new Blob([kmlContent], { type: 'application/vnd.google-earth.kml+xml' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'map_export.kml';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-    } catch (error) {
-      console.error("Error downloading KML:", error);
-      setError("Failed to download KML file");
-    }
-  };
-
-  // Function to clear KML data
-  const handleClearKml = () => {
-    removeExistingBoundaries();
-    setError("");
   };
 
   return (
@@ -497,13 +300,13 @@ export const MapBox = () => {
             Reset
           </Button>
 
-          <div className="absolute top-16 left-2 bg-white p-2 rounded-lg shadow-md">
+          <div className="absolute top-23 left-2 shadow-md">
             <input
               type="text"
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               placeholder="Search for a region"
-              className="p-2 rounded-md border"
+              className="p-2 bg-white rounded-md border"
             />
             <Button 
               onClick={handleSearch}
@@ -512,42 +315,6 @@ export const MapBox = () => {
             >
               {loading ? "Searching..." : "Search"}
             </Button>
-          </div>
-          
-          {/* KML File Controls */}
-          <div className="absolute top-32 left-2 bg-white p-2 rounded-lg shadow-md">
-            <input
-              type="file"
-              id="kml-file-input"
-              accept=".kml"
-              onChange={handleKmlFileUpload}
-              className="hidden" // Hide the actual file input
-            />
-            <Button 
-              onClick={() => document.getElementById('kml-file-input')?.click()}
-              className="w-full mb-2"
-              disabled={loading}
-            >
-              {loading ? "Loading..." : "Add Your KML File"}
-            </Button>
-            
-            {/* Show these buttons when KML is loaded */}
-            {kmlLoaded && (
-              <>
-                <Button 
-                  onClick={handleDownloadKml}
-                  className="w-full mb-2"
-                >
-                  Download KML
-                </Button>
-                <Button 
-                  onClick={handleClearKml}
-                  className="w-full"
-                >
-                  Clear
-                </Button>
-              </>
-            )}
             {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
           </div>
         </div>

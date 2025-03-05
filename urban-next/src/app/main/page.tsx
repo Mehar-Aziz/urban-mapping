@@ -1,4 +1,4 @@
-import {MapBox} from "@/components/MapBox";
+import { MapBox } from "@/components/mapbox/MapBox";
 
 export default function Home() {
   return (

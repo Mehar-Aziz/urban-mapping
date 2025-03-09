@@ -18,7 +18,7 @@ export const MapBox = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Helper function to get bounds from GeoJSON
+  //  get bounds from GeoJSON
   const getBoundsFromGeoJson = (geojson: any): [[number, number], [number, number]] | null => {
     if (!geojson || (!geojson.features && !geojson.geometry)) return null;
     
@@ -157,7 +157,7 @@ export const MapBox = () => {
             limit: 1
           },
           headers: {
-            'User-Agent': 'MapApp/1.0' // Required by Nominatim's terms of use
+            'User-Agent': 'MapApp/1.0' 
           }
         }
       );

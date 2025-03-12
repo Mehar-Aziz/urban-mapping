@@ -12,6 +12,23 @@ const MAPBOX_TOKEN = "pk.eyJ1IjoibWVoYXItYXppeiIsImEiOiJjbTdwd3BicDcwMmF5MmxwaHJ
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
 const API_URL = "http://127.0.0.1:7000"; // Dynamic backend URL
 
+interface Asset {
+  id: string;
+  name: string;
+  type: "search" | "kml";
+  geoJson: any;
+}
+
+interface GeoJSON {
+  type: string;
+  features?: any[];
+  geometry?: {
+    type: string;
+    coordinates: any;
+  };
+  coordinates?: any;
+}
+
 const MapBox = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -19,7 +36,9 @@ const MapBox = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null); // State for coordinates
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [assets, setAssets] = useState<Asset[]>([]); // State for stored assets
+  const [selectedAsset, setSelectedAsset] = useState<string | null>(null); // State for selected asset
 
   // Initialize the map
   useEffect(() => {
@@ -43,16 +62,27 @@ const MapBox = () => {
   const removeExistingBoundaries = () => {
     if (!mapRef.current) return;
 
-    const layers = ["kml-layer", "kml-outline", "search-fill", "search-outline"];
-    const sources = ["kml-source", "search-boundary"];
+    // Get all existing layers
+    const layers = mapRef.current.getStyle()?.layers;
 
-    layers.forEach((layer) => {
-      if (mapRef.current!.getLayer(layer)) mapRef.current!.removeLayer(layer);
-    });
+    // Remove all layers
+    if (layers && Array.isArray(layers)) {
+      layers.forEach((layer) => {
+        if (layer.id.startsWith("kml-") || layer.id.startsWith("search-")) {
+          mapRef.current?.removeLayer(layer.id);
+        }
+      });
+    }
 
-    sources.forEach((source) => {
-      if (mapRef.current!.getSource(source)) mapRef.current!.removeSource(source);
-    });
+    // Get all existing sources
+    const sources = mapRef.current.getStyle()?.sources;
+    if (sources) {
+      Object.keys(sources).forEach((source) => {
+        if (source.startsWith("kml-") || source.startsWith("search-")) {
+          mapRef.current?.removeSource(source);
+        }
+      });
+    }
   };
 
   // Reset the map to its initial state
@@ -60,6 +90,7 @@ const MapBox = () => {
     removeExistingBoundaries();
     setError("");
     setCoordinates(null); // Clear coordinates
+    setSelectedAsset(null); // Clear selected asset
     mapRef.current?.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM });
   };
 
@@ -116,6 +147,15 @@ const MapBox = () => {
           });
         });
         mapRef.current?.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+
+        // Store the asset
+        const newAsset: Asset = {
+          id: `kml-${Date.now()}`,
+          name: file.name,
+          type: "kml",
+          geoJson: response.data.geoJson,
+        };
+        setAssets((prev) => [...prev, newAsset]);
       } else {
         setError("Invalid GeoJSON received.");
       }
@@ -175,7 +215,7 @@ const MapBox = () => {
         });
 
         // Process the GeoJSON and fit the map to the bounds
-        const processGeoJSON = (geojson: any) => {
+        const processGeoJSON = (geojson: GeoJSON) => {
           const bounds = new mapboxgl.LngLatBounds();
 
           const processCoordinates = (coords: any) => {
@@ -187,9 +227,9 @@ const MapBox = () => {
           };
 
           if (geojson.type === "Polygon") {
-            geojson.coordinates.forEach((ring: any) => processCoordinates(ring));
+            geojson.coordinates?.forEach((ring: any) => processCoordinates(ring));
           } else if (geojson.type === "MultiPolygon") {
-            geojson.coordinates.forEach((polygon: any) => {
+            geojson.coordinates?.forEach((polygon: any) => {
               polygon.forEach((ring: any) => processCoordinates(ring));
             });
           } else if (geojson.type === "LineString") {
@@ -207,12 +247,172 @@ const MapBox = () => {
         } else {
           setError("Invalid boundary data for this location.");
         }
+
+        // Store the asset
+        const newAsset: Asset = {
+          id: `search-${Date.now()}`,
+          name: searchQuery,
+          type: "search",
+          geoJson: geojson,
+        };
+        setAssets((prev) => [...prev, newAsset]);
       } else {
         setError("Location not found.");
       }
     } catch (err) {
       console.error("Search failed:", err);
       setError("Search failed. Try again.");
+    }
+  };
+
+  // Handle asset selection
+  const handleAssetSelection = (assetId: string) => {
+    const asset = assets.find((a) => a.id === assetId);
+    if (!asset || !mapRef.current) return;
+
+    setSelectedAsset(assetId);
+
+    // Remove all existing layers and sources
+    removeExistingBoundaries();
+
+    // Generate unique source and layer IDs using the asset ID
+    const sourceId = `${asset.type}-source-${asset.id}`;
+    const layerId = `${asset.type}-layer-${asset.id}`;
+    const outlineId = `${asset.type}-outline-${asset.id}`;
+
+    // Validate GeoJSON structure
+    if (!asset.geoJson || !asset.geoJson.type) {
+      console.error("Invalid GeoJSON: Missing type");
+      return;
+    }
+
+    // Add GeoJSON source and layers to the map
+    mapRef.current.addSource(sourceId, { type: "geojson", data: asset.geoJson });
+    mapRef.current.addLayer({
+      id: layerId,
+      type: "fill",
+      source: sourceId,
+      paint: { "fill-color": asset.type === "kml" ? "#ff0000" : "#00ff00", "fill-opacity": 0.4 },
+    });
+    mapRef.current.addLayer({
+      id: outlineId,
+      type: "line",
+      source: sourceId,
+      paint: { "line-color": "#000", "line-width": 2 },
+    });
+
+    // Adjust the map view to fit the asset's boundaries
+    const bounds = new mapboxgl.LngLatBounds();
+
+    const processGeoJSON = (geojson: GeoJSON) => {
+      if (!geojson || !geojson.type) {
+        console.error("Invalid GeoJSON: Missing type");
+        return;
+      }
+
+      // Handle FeatureCollection
+      if (geojson.type === "FeatureCollection") {
+        if (!geojson.features || !Array.isArray(geojson.features)) {
+          console.error("Invalid GeoJSON: Missing features array");
+          return;
+        }
+
+        geojson.features.forEach((feature: any) => {
+          if (!feature.geometry || !feature.geometry.coordinates) {
+            console.error("Invalid feature: Missing geometry or coordinates");
+            return;
+          }
+
+          const processCoordinates = (coords: any) => {
+            if (Array.isArray(coords[0])) {
+              coords.forEach((coord: any) => processCoordinates(coord));
+            } else {
+              bounds.extend(coords);
+            }
+          };
+
+          if (feature.geometry.type === "Polygon") {
+            feature.geometry.coordinates.forEach((ring: any) => processCoordinates(ring));
+          } else if (feature.geometry.type === "MultiPolygon") {
+            feature.geometry.coordinates.forEach((polygon: any) => {
+              polygon.forEach((ring: any) => processCoordinates(ring));
+            });
+          } else if (feature.geometry.type === "LineString") {
+            processCoordinates(feature.geometry.coordinates);
+          } else if (feature.geometry.type === "Point") {
+            bounds.extend(feature.geometry.coordinates);
+          } else {
+            console.error("Unsupported geometry type:", feature.geometry.type);
+          }
+        });
+      }
+      // Handle single Feature
+      else if (geojson.type === "Feature") {
+        if (!geojson.geometry || !geojson.geometry.coordinates) {
+          console.error("Invalid feature: Missing geometry or coordinates");
+          return;
+        }
+
+        const processCoordinates = (coords: any) => {
+          if (Array.isArray(coords[0])) {
+            coords.forEach((coord: any) => processCoordinates(coord));
+          } else {
+            bounds.extend(coords);
+          }
+        };
+
+        if (geojson.geometry.type === "Polygon") {
+          geojson.geometry.coordinates.forEach((ring: any) => processCoordinates(ring));
+        } else if (geojson.geometry.type === "MultiPolygon") {
+          geojson.geometry.coordinates.forEach((polygon: any) => {
+            polygon.forEach((ring: any) => processCoordinates(ring));
+          });
+        } else if (geojson.geometry.type === "LineString") {
+          processCoordinates(geojson.geometry.coordinates);
+        } else if (geojson.geometry.type === "Point") {
+          bounds.extend(geojson.geometry.coordinates);
+        } else {
+          console.error("Unsupported geometry type:", geojson.geometry.type);
+        }
+      }
+      // Handle standalone Geometry
+      else if (geojson.type === "Polygon" || geojson.type === "MultiPolygon" || geojson.type === "LineString" || geojson.type === "Point") {
+        const processCoordinates = (coords: any) => {
+          if (Array.isArray(coords[0])) {
+            coords.forEach((coord: any) => processCoordinates(coord));
+          } else {
+            bounds.extend(coords);
+          }
+        };
+
+        if (geojson.type === "Polygon") {
+          geojson.coordinates?.forEach((ring: any) => processCoordinates(ring));
+        } else if (geojson.type === "MultiPolygon") {
+          geojson.coordinates?.forEach((polygon: any) => {
+            polygon.forEach((ring: any) => processCoordinates(ring));
+          });
+        } else if (geojson.type === "LineString") {
+          processCoordinates(geojson.coordinates);
+        } else if (geojson.type === "Point") {
+          bounds.extend(geojson.coordinates);
+        }
+      } else {
+        console.error("Unsupported GeoJSON type:", geojson.type);
+      }
+    };
+
+    processGeoJSON(asset.geoJson);
+
+    if (!bounds.isEmpty()) {
+      // Add padding for Point geometries
+      if (bounds.getNorthEast().lng === bounds.getSouthWest().lng && bounds.getNorthEast().lat === bounds.getSouthWest().lat) {
+        bounds.extend([bounds.getNorthEast().lng + 0.01, bounds.getNorthEast().lat + 0.01]);
+        bounds.extend([bounds.getSouthWest().lng - 0.01, bounds.getSouthWest().lat - 0.01]);
+      }
+
+      mapRef.current.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+    } else {
+      console.error("No valid bounds found for the asset.");
     }
   };
 
@@ -238,6 +438,17 @@ const MapBox = () => {
             Coordinates: Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
           </p>
         )}
+
+        {/* Assets Dropdown */}
+        <h2 className="text-lg font-semibold mt-4">Stored Assets</h2>
+        <ul className="mt-2">
+          {assets.map((asset) => (
+            <li key={asset.id} className="flex justify-between items-center mt-2">
+              <span>{asset.name}</span>
+              <Button onClick={() => handleAssetSelection(asset.id)}>View</Button>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="w-[80%] relative">

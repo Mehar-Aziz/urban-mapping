@@ -1,87 +1,27 @@
-"use client"
+"use client";
+
 import React, { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
-import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from "@/components/ui/button"
+import "mapbox-gl/dist/mapbox-gl.css";
+import { Button } from "@/components/ui/button";
 import axios from "axios";
 
-const INITIAL_CENTER: [number, number] = [69.3451, 30.3753];
+const INITIAL_CENTER: [number, number] = [69.3451, 30.3753]; // Pakistan
 const INITIAL_ZOOM = 3.9;
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWVoYXItYXppeiIsImEiOiJjbTdwd3BicDcwMmF5MmxwaHJkeW13cnVvIn0.4MS6keg1jZvx4KOBDsTqug";
+const NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
+const API_URL = "http://127.0.0.1:7000"; // Dynamic backend URL
 
-export const MapBox = () => {
+const MapBox = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
-  const [zoom, setZoom] = useState(INITIAL_ZOOM);
-  const [region, setRegion] = useState(""); // State for the search input
+  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null); // State for coordinates
 
-  //  get bounds from GeoJSON
-  const getBoundsFromGeoJson = (geojson: any): [[number, number], [number, number]] | null => {
-    if (!geojson || (!geojson.features && !geojson.geometry)) return null;
-    
-    let minLng = Infinity;
-    let maxLng = -Infinity;
-    let minLat = Infinity;
-    let maxLat = -Infinity;
-    
-    // Process features if it's a FeatureCollection
-    if (geojson.features) {
-      geojson.features.forEach((feature: any) => {
-        if (!feature.geometry || !feature.geometry.coordinates) return;
-        
-        processGeometry(feature.geometry);
-      });
-    } 
-    // Process geometry directly if it's a Feature or a standalone geometry
-    else if (geojson.geometry) {
-      processGeometry(geojson.geometry);
-    } 
-    // If it's a standalone geometry
-    else if (geojson.coordinates) {
-      processGeometry(geojson);
-    }
-    
-    function processGeometry(geometry: any) {
-      const { type, coordinates } = geometry;
-      
-      if (type === 'Point') {
-        updateBounds(coordinates);
-      } 
-      else if (type === 'LineString' || type === 'MultiPoint') {
-        coordinates.forEach((coord: number[]) => updateBounds(coord));
-      } 
-      else if (type === 'Polygon' || type === 'MultiLineString') {
-        coordinates.forEach((ring: number[][]) => {
-          ring.forEach((coord: number[]) => updateBounds(coord));
-        });
-      } 
-      else if (type === 'MultiPolygon') {
-        coordinates.forEach((polygon: number[][][]) => {
-          polygon.forEach((ring: number[][]) => {
-            ring.forEach((coord: number[]) => updateBounds(coord));
-          });
-        });
-      }
-    }
-    
-    function updateBounds(coord: number[]) {
-      const [lng, lat] = coord;
-      minLng = Math.min(minLng, lng);
-      maxLng = Math.max(maxLng, lng);
-      minLat = Math.min(minLat, lat);
-      maxLat = Math.max(maxLat, lat);
-    }
-    
-    // Return null if we didn't find any valid coordinates
-    if (minLng === Infinity || minLat === Infinity) return null;
-    
-    // Return as [[minLng, minLat], [maxLng, maxLat]]
-    return [[minLng, minLat], [maxLng, maxLat]];
-  };
-
+  // Initialize the map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
@@ -89,236 +29,236 @@ export const MapBox = () => {
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
-      center: center,
-      zoom: zoom,
+      center: INITIAL_CENTER,
+      zoom: INITIAL_ZOOM,
       style: "mapbox://styles/mapbox/satellite-streets-v12",
     });
 
-    if (mapRef.current) {
-      mapRef.current.on("move", () => {
-        const mapInstance = mapRef.current;
-        if (!mapInstance) return;
-
-        const mapCenter = mapInstance.getCenter();
-        const mapZoom = mapInstance.getZoom();
-
-        setCenter([mapCenter.lng, mapCenter.lat]);
-        setZoom(mapZoom);
-      });
-    }
-
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-      }
+      mapRef.current?.remove();
     };
   }, []);
 
-  // Function to remove existing boundary layers
+  // Remove existing layers and sources from the map
   const removeExistingBoundaries = () => {
-    if (mapRef.current) {
-      if (mapRef.current.getLayer('region-boundary')) {
-        mapRef.current.removeLayer('region-boundary');
-      }
-      if (mapRef.current.getLayer('region-outline')) {
-        mapRef.current.removeLayer('region-outline');
-      }
-      if (mapRef.current.getSource('region-boundary')) {
-        mapRef.current.removeSource('region-boundary');
-      }
-    }
-  };
+    if (!mapRef.current) return;
 
-  const handleButtonClick = () => {
-    removeExistingBoundaries();
-    setError("");
-    mapRef.current?.flyTo({
-      center: INITIAL_CENTER,
-      zoom: INITIAL_ZOOM,
+    const layers = ["kml-layer", "kml-outline", "search-fill", "search-outline"];
+    const sources = ["kml-source", "search-boundary"];
+
+    layers.forEach((layer) => {
+      if (mapRef.current!.getLayer(layer)) mapRef.current!.removeLayer(layer);
+    });
+
+    sources.forEach((source) => {
+      if (mapRef.current!.getSource(source)) mapRef.current!.removeSource(source);
     });
   };
 
-  const handleSearch = async () => {
-    if (!region) return;
-    
+  // Reset the map to its initial state
+  const handleReset = () => {
     removeExistingBoundaries();
+    setError("");
+    setCoordinates(null); // Clear coordinates
+    mapRef.current?.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM });
+  };
+
+  // Handle file selection
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    setFile(event.target.files[0]);
+  };
+
+  // Handle file upload and conversion
+  const handleUpload = async () => {
+    if (!file) {
+      setError("Please select a KML file.");
+      return;
+    }
+
     setLoading(true);
     setError("");
-    
+
     try {
-      // Fetch the boundary using Nominatim API
-      const nominatimResponse = await axios.get(
-        `https://nominatim.openstreetmap.org/search`,
-        {
-          params: {
-            q: region,
-            format: 'json',
-            polygon_geojson: 1,
-            limit: 1
-          },
-          headers: {
-            'User-Agent': 'MapApp/1.0' 
-          }
-        }
-      );
-      
-      if (nominatimResponse.data && nominatimResponse.data.length > 0) {
-        const result = nominatimResponse.data[0];
-        
-        // Get the coordinates from the result
-        const latitude = parseFloat(result.lat);
-        const longitude = parseFloat(result.lon);
-        
-        // Center the map to the coordinates
-        mapRef.current?.flyTo({
-          center: [longitude, latitude],
-          zoom: 10,
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Send the KML file to the backend
+      const response = await axios.post(`${API_URL}/api/convert-kml`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      console.log("Response from API:", response.data);
+
+      if (response.data.geoJson) {
+        removeExistingBoundaries();
+
+        // Add the GeoJSON data to the map
+        mapRef.current?.addSource("kml-source", { type: "geojson", data: response.data.geoJson });
+        mapRef.current?.addLayer({
+          id: "kml-layer",
+          type: "fill",
+          source: "kml-source",
+          paint: { "fill-color": "#ff0000", "fill-opacity": 0.4 },
         });
-        
-        if (result.geojson) {
-          // Add the boundary to the map
-          mapRef.current?.addSource("region-boundary", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              geometry: result.geojson
-            }
-          });
-          
-          // Add fill layer
-          mapRef.current?.addLayer({
-            id: "region-boundary",
-            type: "fill",
-            source: "region-boundary",
-            layout: {},
-            paint: {
-              "fill-color": "#0080ff",
-              "fill-opacity": 0.3
-            }
-          });
-          
-          // Add outline layer
-          mapRef.current?.addLayer({
-            id: "region-outline",
-            type: "line",
-            source: "region-boundary",
-            layout: {},
-            paint: {
-              "line-color": "#000",
-              "line-width": 2
-            }
-          });
-          
-          // Fit the map to the boundary
-          const featureData = {
-            type: 'FeatureCollection',
-            features: [{
-              type: 'Feature',
-              geometry: result.geojson,
-              properties: {}
-            }]
-          };
-          
-          const bounds = getBoundsFromGeoJson(featureData);
-          if (bounds) {
-            mapRef.current?.fitBounds(bounds as mapboxgl.LngLatBoundsLike, {
-              padding: 50
-            });
-          }
-        } else {
-          // Fall back to the simple square if no boundary found
-          mapRef.current?.addSource("region-boundary", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              geometry: {
-                type: "Polygon",
-                coordinates: [
-                  [
-                    [longitude - 0.05, latitude - 0.05],
-                    [longitude + 0.05, latitude - 0.05],
-                    [longitude + 0.05, latitude + 0.05],
-                    [longitude - 0.05, latitude + 0.05],
-                    [longitude - 0.05, latitude - 0.05],
-                  ],
-                ],
-              },
-            },
-          });
+        mapRef.current?.addLayer({
+          id: "kml-outline",
+          type: "line",
+          source: "kml-source",
+          paint: { "line-color": "#000", "line-width": 2 },
+        });
 
-          mapRef.current?.addLayer({
-            id: "region-boundary",
-            type: "fill",
-            source: "region-boundary",
-            layout: {},
-            paint: {
-              "fill-color": "#0080ff",
-              "fill-opacity": 0.5,
-            },
+        // Adjust the map view to fit the boundaries
+        const bounds = new mapboxgl.LngLatBounds();
+        response.data.geoJson.features.forEach((feature: any) => {
+          feature.geometry.coordinates[0].forEach((coord: any) => {
+            bounds.extend(coord);
           });
-
-          mapRef.current?.addLayer({
-            id: "region-outline",
-            type: "line",
-            source: "region-boundary",
-            layout: {},
-            paint: {
-              "line-color": "#000",
-              "line-width": 3,
-            },
-          });
-          
-          setError("Detailed boundary not available. Using approximate area.");
-        }
+        });
+        mapRef.current?.fitBounds(bounds, { padding: 50, maxZoom: 14 });
       } else {
-        setError("Could not find the region");
+        setError("Invalid GeoJSON received.");
       }
-    } catch (error) {
-      console.error("Error fetching boundary:", error);
-      setError("Failed to get region boundary");
+    } catch (err) {
+      console.error("Error uploading file:", err);
+      setError("Failed to upload the file.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle location search
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !mapRef.current) return;
+
+    try {
+      const response = await axios.get(NOMINATIM_API, {
+        params: { q: searchQuery, format: "json", polygon_geojson: 1, limit: 1 },
+      });
+
+      console.log("Nominatim API Response:", response.data); // Debugging log
+
+      if (response.data.length > 0) {
+        const { lat, lon, geojson } = response.data[0];
+
+        console.log("GeoJSON Data:", geojson); // Debugging log
+
+        // Set the coordinates state
+        setCoordinates({ lat: parseFloat(lat), lng: parseFloat(lon) });
+
+        // Center the map on the location
+        mapRef.current?.flyTo({
+          center: [parseFloat(lon), parseFloat(lat)],
+          zoom: 10,
+        });
+
+        if (!geojson) {
+          setError("Detailed boundary not available. Using approximate location.");
+          return;
+        }
+
+        removeExistingBoundaries();
+
+        // Add the search result to the map
+        mapRef.current?.addSource("search-boundary", { type: "geojson", data: geojson });
+        mapRef.current?.addLayer({
+          id: "search-fill",
+          type: "fill",
+          source: "search-boundary",
+          paint: { "fill-color": "#00ff00", "fill-opacity": 0.3 },
+        });
+        mapRef.current?.addLayer({
+          id: "search-outline",
+          type: "line",
+          source: "search-boundary",
+          paint: { "line-color": "#0000ff", "line-width": 2 },
+        });
+
+        // Process the GeoJSON and fit the map to the bounds
+        const processGeoJSON = (geojson: any) => {
+          const bounds = new mapboxgl.LngLatBounds();
+
+          const processCoordinates = (coords: any) => {
+            if (Array.isArray(coords[0])) {
+              coords.forEach((coord: any) => processCoordinates(coord));
+            } else {
+              bounds.extend(coords);
+            }
+          };
+
+          if (geojson.type === "Polygon") {
+            geojson.coordinates.forEach((ring: any) => processCoordinates(ring));
+          } else if (geojson.type === "MultiPolygon") {
+            geojson.coordinates.forEach((polygon: any) => {
+              polygon.forEach((ring: any) => processCoordinates(ring));
+            });
+          } else if (geojson.type === "LineString") {
+            processCoordinates(geojson.coordinates);
+          } else if (geojson.type === "Point") {
+            bounds.extend(geojson.coordinates);
+          }
+
+          return bounds;
+        };
+
+        const bounds = processGeoJSON(geojson);
+        if (!bounds.isEmpty()) {
+          mapRef.current?.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        } else {
+          setError("Invalid boundary data for this location.");
+        }
+      } else {
+        setError("Location not found.");
+      }
+    } catch (err) {
+      console.error("Search failed:", err);
+      setError("Search failed. Try again.");
+    }
+  };
+
   return (
-    <>
-      <div className="flex w-full h-[100vh]">
-        <div className="w-[20%]">
-          {/* Sidebar space left empty for future addition */}
-        </div>
-
-        <div className="w-[80%] relative">
-          <div ref={mapContainerRef} className="w-full h-full" />
-          <div className="absolute top-2 left-2 bg-[#000000] bg-opacity-90 text-white p-2 rounded-lg shadow-md">
-            Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
-          </div>
-          <Button
-            className="absolute top-[50px] left-[12px] z-10 px-3 py-1 rounded-lg cursor-pointer"
-            onClick={handleButtonClick}
-          >
-            Reset
-          </Button>
-
-          <div className="absolute top-23 left-2 shadow-md">
-            <input
-              type="text"
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              placeholder="Search for a region"
-              className="p-2 bg-white rounded-md border"
-            />
-            <Button 
-              onClick={handleSearch}
-              className="ml-2"
-              disabled={loading}
-            >
-              {loading ? "Searching..." : "Search"}
-            </Button>
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-          </div>
-        </div>
+    <div className="flex w-full h-[100vh]">
+      <div className="w-[20%] p-4 bg-gray-200">
+        <h2 className="text-lg font-semibold">Upload KML</h2>
+        <input type="file" accept=".kml" onChange={handleFileUpload} className="mt-2" />
+        <Button onClick={handleUpload} className="mt-2" disabled={loading}>
+          {loading ? "Uploading..." : "Upload"}
+        </Button>
+        <input
+          type="text"
+          placeholder="Search location"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full mt-2 p-2 border rounded"
+        />
+        <Button onClick={handleSearch} className="mt-2">Search</Button>
+        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+        {coordinates && (
+          <p className="mt-2 text-sm">
+            Coordinates: Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
+          </p>
+        )}
       </div>
-    </>
+
+      <div className="w-[80%] relative">
+        <div ref={mapContainerRef} className="w-full h-full" />
+        <Button className="absolute top-[10px] left-[12px] z-10 px-3 py-1 rounded-lg" onClick={handleReset}>
+          Reset
+        </Button>
+      </div>
+    </div>
   );
 };
+
+const checkBackendHealth = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/health`);
+    console.log("Backend health:", response.data);
+  } catch (err) {
+    console.error("Backend is not reachable:", err);
+  }
+};
+
+// Call this function when the app loads
+checkBackendHealth();
+export default MapBox;

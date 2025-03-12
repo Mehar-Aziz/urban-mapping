@@ -1,15 +1,22 @@
 from fastapi import FastAPI
-from database import engine, Base
-from routes.location_routes import router as location_router
+from fastapi.middleware.cors import CORSMiddleware
+from routes.kml_routes import router as kml_router
 
 app = FastAPI()
 
-# Create tables
-Base.metadata.create_all(bind=engine)
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Replace with your frontend URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-# Register routes
-app.include_router(location_router, prefix="/api")
+# Include the KML routes
+app.include_router(kml_router, prefix="/api")
 
-@app.get("/")
-def home():
-    return {"message": "Urban Mapping API is running"}
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "Backend is running!"}

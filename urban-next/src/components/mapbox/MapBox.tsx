@@ -39,12 +39,33 @@ const MapBox = () => {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]); // State for stored assets
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null); // State for selected asset
+    const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
+   const [zoom, setZoom] = useState(INITIAL_ZOOM);
 
   // Initialize the map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      center: center,
+      zoom: zoom,
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
+    });
+
+    if (mapRef.current) {
+      mapRef.current.on("move", () => {
+        const mapInstance = mapRef.current;
+        if (!mapInstance) return;
+
+        const mapCenter = mapInstance.getCenter();
+        const mapZoom = mapInstance.getZoom();
+
+        setCenter([mapCenter.lng, mapCenter.lat]);
+        setZoom(mapZoom);
+      });
+    }
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -205,13 +226,13 @@ const MapBox = () => {
           id: "search-fill",
           type: "fill",
           source: "search-boundary",
-          paint: { "fill-color": "#00ff00", "fill-opacity": 0.3 },
+          paint: { "fill-color": "#088F8F", "fill-opacity": 0.3 },
         });
         mapRef.current?.addLayer({
           id: "search-outline",
           type: "line",
           source: "search-boundary",
-          paint: { "line-color": "#0000ff", "line-width": 2 },
+          paint: { "line-color": "#000000", "line-width": 2 },
         });
 
         // Process the GeoJSON and fit the map to the bounds
@@ -417,48 +438,64 @@ const MapBox = () => {
   };
 
   return (
-    <div className="flex w-full h-[100vh]">
-      <div className="w-[20%] p-4 bg-gray-200">
-        <h2 className="text-lg font-semibold">Upload KML</h2>
-        <input type="file" accept=".kml" onChange={handleFileUpload} className="mt-2" />
-        <Button onClick={handleUpload} className="mt-2" disabled={loading}>
-          {loading ? "Uploading..." : "Upload"}
-        </Button>
+  <div className="flex w-full h-[100vh]">
+    {/* Left Sidebar */}
+    <div className="w-[20%] p-4 bg-gray-200">
+      <h2 className="text-lg font-semibold">Upload KML</h2>
+      <input type="file" accept=".kml" onChange={handleFileUpload} className="mt-2" />
+      <Button onClick={handleUpload} className="mt-2" disabled={loading}>
+        {loading ? "Uploading..." : "Upload"}
+      </Button>
+
+      {/* Coordinates Display */}
+      {coordinates && (
+        <p className="mt-2 text-sm">
+          Coordinates: Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
+        </p>
+      )}
+
+      {/* Error Message */}
+      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+
+      {/* Stored Assets */}
+      <h2 className="text-lg font-semibold mt-4">Stored Assets</h2>
+      <ul className="mt-2">
+        {assets.map((asset) => (
+          <li key={asset.id} className="flex justify-between items-center mt-2">
+            <span>{asset.name}</span>
+            <Button onClick={() => handleAssetSelection(asset.id)}>View</Button>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* Map Container */}
+    <div className="w-[80%] relative">
+    <div className="absolute top-2 left-2 bg-[#000000] bg-opacity-90 text-white p-2 rounded-lg shadow-md">
+             Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
+           </div>
+      {/* Search Functionality */}
+      <div className="absolute top-[10px] left-[12px] z-10 flex gap-2">
         <input
           type="text"
           placeholder="Search location"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full mt-2 p-2 border rounded"
+          className="p-2 border border-[#fff] bg-gray-200 rounded"
         />
-        <Button onClick={handleSearch} className="mt-2">Search</Button>
-        {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-        {coordinates && (
-          <p className="mt-2 text-sm">
-            Coordinates: Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
-          </p>
-        )}
-
-        {/* Assets Dropdown */}
-        <h2 className="text-lg font-semibold mt-4">Stored Assets</h2>
-        <ul className="mt-2">
-          {assets.map((asset) => (
-            <li key={asset.id} className="flex justify-between items-center mt-2">
-              <span>{asset.name}</span>
-              <Button onClick={() => handleAssetSelection(asset.id)}>View</Button>
-            </li>
-          ))}
-        </ul>
+        <Button onClick={handleSearch}>Search</Button>
       </div>
 
-      <div className="w-[80%] relative">
-        <div ref={mapContainerRef} className="w-full h-full" />
-        <Button className="absolute top-[10px] left-[12px] z-10 px-3 py-1 rounded-lg" onClick={handleReset}>
-          Reset
-        </Button>
-      </div>
+      {/* Reset Button */}
+      <Button className="absolute top-[60px] left-[220px] z-10 px-5 py-1 rounded-lg" onClick={handleReset}>
+        Reset
+      </Button>
+
+      {/* Map */}
+      <div ref={mapContainerRef} className="w-full h-full" />
     </div>
-  );
+  </div>
+);
 };
 
 const checkBackendHealth = async () => {

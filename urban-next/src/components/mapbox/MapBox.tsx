@@ -10,7 +10,7 @@ const INITIAL_CENTER: [number, number] = [69.3451, 30.3753]; // Pakistan
 const INITIAL_ZOOM = 3.9;
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWVoYXItYXppeiIsImEiOiJjbTdwd3BicDcwMmF5MmxwaHJkeW13cnVvIn0.4MS6keg1jZvx4KOBDsTqug";
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
-const API_URL = "http://127.0.0.1:7000"; // Dynamic backend URL
+const API_URL = "http://127.0.0.1:8000"; // Dynamic backend URL
 
 interface Asset {
   id: string;
@@ -447,6 +447,19 @@ const MapBox = () => {
         {loading ? "Uploading..." : "Upload"}
       </Button>
 
+      {/* Search Functionality */}
+      
+      <input
+           type="text"
+           placeholder="Search location"
+           value={searchQuery}
+           onChange={(e) => setSearchQuery(e.target.value)}
+           className="w-full mt-2 p-2 border border-[#000] rounded"
+         />
+         <Button onClick={handleSearch} className="mt-2">Search</Button>
+
+{/* Error Message */}
+{error && <p className="text-red-500 text-sm mt-2">{error}</p>}
       {/* Coordinates Display */}
       {coordinates && (
         <p className="mt-2 text-sm">
@@ -454,8 +467,7 @@ const MapBox = () => {
         </p>
       )}
 
-      {/* Error Message */}
-      {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+      
 
       {/* Stored Assets */}
       <h2 className="text-lg font-semibold mt-4">Stored Assets</h2>
@@ -474,20 +486,10 @@ const MapBox = () => {
     <div className="absolute top-2 left-2 bg-[#000000] bg-opacity-90 text-white p-2 rounded-lg shadow-md">
              Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
            </div>
-      {/* Search Functionality */}
-      <div className="absolute top-[10px] left-[12px] z-10 flex gap-2">
-        <input
-          type="text"
-          placeholder="Search location"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="p-2 border border-[#fff] bg-gray-200 rounded"
-        />
-        <Button onClick={handleSearch}>Search</Button>
-      </div>
+      
 
       {/* Reset Button */}
-      <Button className="absolute top-[60px] left-[220px] z-10 px-5 py-1 rounded-lg" onClick={handleReset}>
+      <Button className="absolute top-[10px] left-[12px] z-10 px-5 py-1 rounded-lg" onClick={handleReset}>
         Reset
       </Button>
 

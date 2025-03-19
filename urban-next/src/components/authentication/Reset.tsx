@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react"; // For lock icon
+import { Lock } from "lucide-react"; 
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -17,7 +17,7 @@ export default function ResetPassword() {
       return;
     }
     alert("Password changed successfully!");
-    router.push("/login"); // Redirect after reset
+    router.push("/login"); 
   };
 
   return (

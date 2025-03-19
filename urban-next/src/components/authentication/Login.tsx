@@ -64,7 +64,8 @@ export default function Login() {
               Login
             </Button>
 
-            <div className="text-left text-sm text-[#00674F] font-semibold cursor-pointer" onClick={() => router.push("/register")}>Create a new account</div>
+            <div className="text-left text-sm text-[#00674F] font-semibold cursor-pointer" onClick={() => router.push("/registration")}
+            >Create a new account</div>
           </div>
         </CardContent>
       </Card>

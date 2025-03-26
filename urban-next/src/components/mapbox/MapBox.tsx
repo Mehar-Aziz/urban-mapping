@@ -499,16 +499,4 @@ const MapBox = () => {
   </div>
 );
 };
-
-const checkBackendHealth = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/health`);
-    console.log("Backend health:", response.data);
-  } catch (err) {
-    console.error("Backend is not reachable:", err);
-  }
-};
-
-// Call this function when the app loads
-checkBackendHealth();
 export default MapBox;

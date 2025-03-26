@@ -15,15 +15,35 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.");
-    } else {
-      setError("");
-      router.push("/login"); 
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:8000/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: username,
+          email: email,
+          password: password,
+        }),
+      });
+  
+      if (response.ok) {
+        router.push("/login"); 
+      } else {
+        setError("Registration failed");
+      }
+    } catch (error) {
+      setError("Something went wrong");
     }
   };
-
+  
+  
   return (
     <div className="relative font-sans flex items-center justify-center min-h-screen bg-cover bg-center sm:bg-none" 
       style={{ backgroundImage: "url('/authenticationBg.jpeg')" }}>

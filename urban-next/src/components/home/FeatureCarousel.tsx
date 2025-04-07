@@ -7,7 +7,7 @@ import { features } from "./Features"
 export default function FeatureCarousel() {
   return (
     <section className="px-6 py-10 bg-gray-100">
-      <h2 className="text-2xl font-semibold mb-6">Urban Mapping Features</h2>
+      <h2 className="text-2xl font-semibold mb-6">Features</h2>
       <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
         {features.map((feature, idx) => (
           <Card key={idx} className="min-w-[280px] w-[300px] rounded-lg">

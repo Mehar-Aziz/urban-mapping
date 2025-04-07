@@ -6,6 +6,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Plus } from "lucide-react"
 import { useState } from "react"
 import CreateProjectModal from "./home/CreateProjectModal"
+import Link from "next/link"
+
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
@@ -18,9 +20,10 @@ export default function Navbar() {
 
         {/* Center Links */}
         <nav className="space-x-6">
-          <a href="#map" className="text-gray-700 hover:text-blue-600">Map</a>
-          <a href="#help" className="text-gray-700 hover:text-blue-600">Help</a>
-        </nav>
+  <Link href="/main" className="text-gray-700 hover:text-blue-600">Map</Link>
+  <Link href="#help" className="text-gray-700 hover:text-blue-600">Help</Link>
+</nav>
+
 
         {/* Right-side actions */}
         <div className="flex items-center space-x-4 ">

@@ -21,7 +21,7 @@ export default function Navbar() {
         {/* Center Links */}
         <nav className="space-x-6">
   <Link href="/main" className="text-gray-700 hover:text-blue-600">Map</Link>
-  <Link href="#help" className="text-gray-700 hover:text-blue-600">Help</Link>
+  <Link href="/help" className="text-gray-700 hover:text-blue-600">Help</Link>
 </nav>
 
 

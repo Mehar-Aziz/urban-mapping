@@ -3,6 +3,7 @@ import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function ProfilePage() {
   const downloadedDocs = ["urban_map.pdf", "vegetation_data.csv", "air_quality_report.pdf"]
@@ -99,12 +100,21 @@ export default function ProfilePage() {
         {/* Right: Projects & Docs */}
         <div className="md:col-span-2 space-y-6">
           {/* Total Projects */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-2">Total Projects</h3>
-              <p className="text-4xl font-bold text-blue-600">5</p>
-            </CardContent>
-          </Card>
+<Card className="relative">
+  <CardContent className="p-6">
+  <Link href="/profile/seeprojects">
+    <button
+      className="absolute top-4 right-4 text-sm font-semibold border p-2 border-2px-solid rounded-lg shadow cursor-pointer"
+    >
+      See All Projects
+    </button>
+    </Link>
+
+    <h3 className="text-lg font-semibold mb-2">Total Projects</h3>
+    <p className="text-4xl font-bold text-blue-600">5</p>
+  </CardContent>
+</Card>
+
 
           {/* Downloaded Documents */}
           <Card>

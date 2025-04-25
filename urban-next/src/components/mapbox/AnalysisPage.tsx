@@ -105,9 +105,11 @@ export default function MapPage() {
         {/* Left Sidebar */}
         <div className="w-56 bg-white border-r flex flex-col">
           <div className="p-3 border-b">
+            <Link href='/main/analysis/viewreport'>
             <Button variant="outline" className="w-full justify-start">
               View Report
             </Button>
+            </Link>
           </div>
           
           <div className="p-3 border-b">

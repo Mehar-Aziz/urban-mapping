@@ -5,6 +5,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
+import Link from "next/link";
 
 const INITIAL_CENTER: [number, number] = [69.3451, 30.3753]; // Pakistan
 const INITIAL_ZOOM = 3.9;
@@ -483,15 +484,20 @@ const MapBox = () => {
 
     {/* Map Container */}
     <div className="w-[80%] relative">
-    <div className="absolute top-2 left-2 bg-[#000000] bg-opacity-90 text-white p-2 rounded-lg shadow-md">
+    <div className="absolute top-2 left-2 bg-[#000000] bg-opacity-90 text-white p-2 rounded-lg shadow-md z-1">
              Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
            </div>
       
 
       {/* Reset Button */}
-      <Button className="absolute top-[10px] left-[12px] z-10 px-5 py-1 rounded-lg" onClick={handleReset}>
+      <Button className="absolute top-[60px] left-[12px] z-10 px-5 py-1 rounded-lg" onClick={handleReset}>
         Reset
       </Button>
+<Link href="/main/analysis">
+      <Button className="absolute top-[520px] right-[30px] z-10 px-5 py-1 rounded-lg" >
+        Select
+      </Button>
+      </Link>
 
       {/* Map */}
       <div ref={mapContainerRef} className="w-full h-full" />

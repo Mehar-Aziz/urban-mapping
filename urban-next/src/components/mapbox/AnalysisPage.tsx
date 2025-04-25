@@ -28,7 +28,7 @@ const API_URL = "http://127.0.0.1:8000";
 
 // Use case options
 const USE_CASES = [
-  { value: "crop-monitoring", label: "Crop Monitoring" },
+  { value: "air-analysis", label: "Air Analysis" },
   { value: "soil-analysis", label: "Soil Analysis" },
   { value: "water-resources", label: "Water Resources" }
 ];
@@ -40,8 +40,8 @@ export default function MapPage() {
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
   
   // State for use case selection
-  const [selectedUseCase, setSelectedUseCase] = useState("crop-monitoring");
-  const [useCaseLabel, setUseCaseLabel] = useState("Crop Monitoring");
+  const [selectedUseCase, setSelectedUseCase] = useState("air-analysis");
+  const [useCaseLabel, setUseCaseLabel] = useState("Air Analysis");
   
   // State for calendar dates
   const [fromDate, setFromDate] = useState<Date | undefined>(new Date());

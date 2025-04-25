@@ -79,7 +79,7 @@ export default function HelpPage() {
             <AccordionItem value="item-1">
               <AccordionTrigger>What kind of images are analyzed?</AccordionTrigger>
               <AccordionContent>
-                A: Satellite imagery from [SatelliteProvider]. We analyze data from various satellites to provide the most accurate and up-to-date information.
+                A: Satellite imagery from Sentinal and Landsat. We analyze data from various satellites to provide the most accurate and up-to-date information.
               </AccordionContent>
             </AccordionItem>
             

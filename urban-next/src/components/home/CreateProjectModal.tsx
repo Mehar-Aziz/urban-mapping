@@ -22,15 +22,11 @@ export default function CreateProjectModal({ open, setOpen }: { open: boolean, s
         </DialogHeader>
         <form className="space-y-4">
           <div>
-            <Label htmlFor="name">Project Name</Label>
+            <Label htmlFor="name" className="mb-2">Project Name</Label>
             <Input id="name" placeholder="Enter project name" />
           </div>
           <div>
-            <Label htmlFor="owner">Owner</Label>
-            <Input id="owner" placeholder="Enter owner name" />
-          </div>
-          <div>
-            <Label htmlFor="description">Description</Label>
+            <Label htmlFor="description" className="mb-2">Description</Label>
             <Textarea id="description" placeholder="Project description..." />
           </div>
           <DialogFooter>

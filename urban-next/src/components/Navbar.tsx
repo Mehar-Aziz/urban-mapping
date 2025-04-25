@@ -28,7 +28,7 @@ export default function Navbar() {
         {/* Right-side actions */}
         <div className="flex items-center space-x-4 ">
           <Button variant="outline" onClick={() => setOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" /> Create Project
+            <Plus className="w-4 h-4 " /> Create Project
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

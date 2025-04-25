@@ -37,9 +37,14 @@ export default function Navbar() {
               </Avatar>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>My Profile</DropdownMenuItem>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
+  <Link href="/profile" passHref legacyBehavior>
+    <DropdownMenuItem asChild>
+      <a>My Profile</a>
+    </DropdownMenuItem>
+  </Link>
+  <DropdownMenuItem>Logout</DropdownMenuItem>
+</DropdownMenuContent>
+
           </DropdownMenu>
         </div>
       </div>

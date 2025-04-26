@@ -35,7 +35,7 @@ export default function Login() {
       if (response.ok) {
         const data = await response.json();
 
-  // Dummy role assignment
+  // Dummy role
   let role = "user";
   if (email === "urban@gmail.com") {
     role = "admin";

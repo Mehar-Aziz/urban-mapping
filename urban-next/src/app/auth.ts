@@ -30,3 +30,35 @@ export const registerUser = async (username: string, email: string, password: st
     throw error;
   }
 };
+
+// Get All Users
+export const getAllUsers = async (token?: string) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.get(`${API_URL}/users`, { headers });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    throw error;
+  }
+};
+
+// Delete User
+export const deleteUser = async (userId: number, token?: string) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.delete(`${API_URL}/users/${userId}`, { headers });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting user:", error);
+    throw error;
+  }
+};

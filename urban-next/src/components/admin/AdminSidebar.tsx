@@ -20,9 +20,9 @@ export default function Sidebar() {
         </Link>
 
         <Link
-          href="/admin/manage-users"
-          className={`hover:text-blue-600 p-2 rounded ${
-            pathname === '/admin/manage-users' ? 'bg-blue-100 font-bold text-blue-600' : ''
+          href="/admin/manageusers"
+          className={`hover:text-[#00674F] p-2 rounded ${
+            pathname === '/admin/manageusers' ? 'bg-[#00674F30] font-bold text-[#00674F]' : ''
           }`}
         >
           Manage Users
@@ -30,8 +30,8 @@ export default function Sidebar() {
 
         <Link
           href="/admin/projects"
-          className={`hover:text-blue-600 p-2 rounded ${
-            pathname === '/admin/projects' ? 'bg-blue-100 font-bold text-blue-600' : ''
+          className={`hover:text-[#00674F] p-2 rounded ${
+            pathname === '/admin/projects' ? 'bg-[#00674F30] font-bold text-[#00674F]' : ''
           }`}
         >
           Projects

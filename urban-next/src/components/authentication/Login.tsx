@@ -34,8 +34,27 @@ export default function Login() {
 
       if (response.ok) {
         const data = await response.json();
-        localStorage.setItem("token", data.access_token);
-        router.push("/dashboard");
+
+  // Dummy role assignment
+  let role = "user";
+  if (email === "urban@gmail.com") {
+    role = "admin";
+  }
+
+  const user = {
+    email: email,
+    role: role,
+    token: data.access_token,
+  };
+
+  localStorage.setItem("user", JSON.stringify(user));
+  localStorage.setItem("token", data.access_token);
+
+  if (role === "admin") {
+    router.push("/admin"); // Redirect admin to admin dashboard
+  } else {
+    router.push("/dashboard"); // Normal user
+  }
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Login failed. Please try again.");

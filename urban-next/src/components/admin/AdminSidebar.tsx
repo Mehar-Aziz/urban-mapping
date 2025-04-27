@@ -31,7 +31,7 @@ export default function Sidebar() {
         <Link
           href="/admin/manageprojects"
           className={`hover:text-[#00674F] p-2 rounded ${
-            pathname === '/admin/projects' ? 'bg-[#00674F30] font-bold text-[#00674F]' : ''
+            pathname === '/admin/manageprojects' ? 'bg-[#00674F30] font-bold text-[#00674F]' : ''
           }`}
         >
           Projects

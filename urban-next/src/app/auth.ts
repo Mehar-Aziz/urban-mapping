@@ -62,3 +62,94 @@ export const deleteUser = async (userId: number, token?: string) => {
     throw error;
   }
 };
+
+// Create Project
+export const createProject = async (name: string, description: string, token?: string) => {
+  try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.post(`${API_URL}/projects`, {
+      name,
+      description,
+    }, { headers });
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error creating project:", error);
+    throw error;
+  }
+};
+
+// Get All Projects
+export const getAllProjects = async (token?: string) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.get(`${API_URL}/projects`, { headers });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    throw error;
+  }
+};
+
+// Get Project by ID
+export const getProjectById = async (projectId: number, token?: string) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.get(`${API_URL}/projects/${projectId}`, { headers });
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching project ${projectId}:`, error);
+    throw error;
+  }
+};
+
+// Update Project
+export const updateProject = async (
+  projectId: number,
+  data: { name?: string; description?: string },
+  token?: string
+) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.put(`${API_URL}/projects/${projectId}`, data, { headers });
+    return response.data;
+  } catch (error) {
+    console.error(`Error updating project ${projectId}:`, error);
+    throw error;
+  }
+};
+
+// Delete Project
+export const deleteProject = async (projectId: number, token?: string) => {
+  try {
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await axios.delete(`${API_URL}/projects/${projectId}`, { headers });
+    return response.data;
+  } catch (error) {
+    console.error(`Error deleting project ${projectId}:`, error);
+    throw error;
+  }
+};

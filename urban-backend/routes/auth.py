@@ -183,29 +183,19 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
 
 # Get all projects for the current user
 @router.get("/projects")
-def get_projects(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
-    try:
-        # Get the user ID from the token
-        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
-        username = payload.get("sub")
-        user = db.query(User).filter(User.username == username).first()
-        
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-        
-        # Get all projects for the user
-        projects = db.query(Project).filter(Project.user_id == user.id).all()
-        
-        return {
-            "projects": [
-                {
-                    "id": project.id,
-                    "name": project.name,
-                    "description": project.description,
-                    "created_at": project.created_at
-                }
-                for project in projects
-            ]
-        }
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def get_projects(db: Session = Depends(get_db)):
+    # Get all projects without filtering by user
+    projects = db.query(Project).all()
+    
+    return {
+        "projects": [
+            {
+                "id": project.id,
+                "name": project.name,
+                "description": project.description,
+                "user_id": project.user_id,
+                "created_at": project.created_at
+            }
+            for project in projects
+        ]
+    }

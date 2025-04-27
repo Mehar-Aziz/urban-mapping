@@ -4,8 +4,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from services.auth_service import hash_password, verify_password, create_access_token, generate_reset_token, verify_reset_token, hash_password
 from services.email_service import email_service
 from database import get_db
-from models import User
-from datetime import timedelta
+from models import User, Project  # Add Project import here
+from datetime import timedelta, datetime  # Add datetime import here
 from pydantic import BaseModel, EmailStr
 import os
 from jose import JWTError, jwt
@@ -28,6 +28,12 @@ class ResetPasswordRequest(BaseModel):
 class ResetPasswordConfirm(BaseModel):
     token: str
     new_password: str
+
+# New Project request models
+class ProjectCreate(BaseModel):
+    name: str
+    description: str = None
+
 # Register user
 @router.post("/register")
 def register(request: RegisterRequest, db: Session = Depends(get_db)):
@@ -82,7 +88,6 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
-
 
 @router.post("/password-reset-request")
 def request_password_reset(request: ResetPasswordRequest, db: Session = Depends(get_db)):
@@ -145,3 +150,62 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"message": "User deleted successfully"}
+
+# === PROJECT API ROUTES ===
+
+# Create a new project
+# Modified backend endpoint without token dependency
+@router.post("/projects")
+def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
+    # Use a default user ID (you can adjust as needed)
+    user_id = 1
+    
+    # Create a new project
+    new_project = Project(
+        name=project.name,
+        description=project.description,
+        user_id=user_id,
+        created_at=datetime.now()
+    )
+    
+    db.add(new_project)
+    db.commit()
+    db.refresh(new_project)
+    
+    return {
+        "message": "Project created successfully",
+        "project": {
+            "id": new_project.id,
+            "name": new_project.name,
+            "description": new_project.description
+        }
+    }
+
+# Get all projects for the current user
+@router.get("/projects")
+def get_projects(db: Session = Depends(get_db), token: str = Depends(oauth2_scheme)):
+    try:
+        # Get the user ID from the token
+        payload = jwt.decode(token, os.getenv("SECRET_KEY"), algorithms=["HS256"])
+        username = payload.get("sub")
+        user = db.query(User).filter(User.username == username).first()
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        # Get all projects for the user
+        projects = db.query(Project).filter(Project.user_id == user.id).all()
+        
+        return {
+            "projects": [
+                {
+                    "id": project.id,
+                    "name": project.name,
+                    "description": project.description,
+                    "created_at": project.created_at
+                }
+                for project in projects
+            ]
+        }
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")

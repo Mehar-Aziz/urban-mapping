@@ -225,7 +225,7 @@ export default function ManageUserPage() {
           <span className="block sm:inline">{error}</span>
         </div>
       ) : (
-        <div className="rounded border bg-[#00674F30]">
+        <div className="rounded border bg-[#00674F10]">
           <Table>
             <TableHeader>
               <TableRow>

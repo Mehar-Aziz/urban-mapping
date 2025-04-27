@@ -29,7 +29,7 @@ export default function Sidebar() {
         </Link>
 
         <Link
-          href="/admin/projects"
+          href="/admin/manageprojects"
           className={`hover:text-[#00674F] p-2 rounded ${
             pathname === '/admin/projects' ? 'bg-[#00674F30] font-bold text-[#00674F]' : ''
           }`}

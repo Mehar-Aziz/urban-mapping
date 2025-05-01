@@ -51,9 +51,9 @@ export default function Login() {
   localStorage.setItem("token", data.access_token);
 
   if (role === "admin") {
-    router.push("/admin"); // Redirect admin to admin dashboard
+    router.push("/admin"); 
   } else {
-    router.push("/dashboard"); // Normal user
+    router.push("/"); 
   }
       } else {
         const errorData = await response.json();

@@ -79,14 +79,13 @@ export default function MapPage() {
     }
   };
 
-
   return (
     <div className="flex flex-col h-screen">
       {/* Top Navigation Bar */}
-      <div className="flex items-center p-4 border-b">
-        <div className="flex space-x-2">          
+      <div className="flex flex-col sm:flex-row items-center p-2 sm:p-4 border-b space-y-2 sm:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:space-x-2 w-full sm:w-auto">
           <Select value={selectedUseCase} onValueChange={handleUseCaseChange}>
-            <SelectTrigger className="w-40 h-9">
+            <SelectTrigger className="w-full sm:w-40 h-9">
               <SelectValue placeholder="Select Use Case" />
             </SelectTrigger>
             <SelectContent>
@@ -97,81 +96,85 @@ export default function MapPage() {
               ))}
             </SelectContent>
           </Select>
-          
         </div>
       </div>
 
-      <div className="flex flex-1">
-        {/* Left Sidebar */}
-        <div className="w-56 bg-white border-r flex flex-col">
+      <div className="flex flex-1 flex-col sm:flex-row">
+        {/* Sidebar for larger screens, Bottom Nav for mobile */}
+        <div className="sm:w-56 bg-white border-r sm:flex sm:flex-col hidden">
           <div className="p-3 border-b">
             <Link href='/main/analysis/viewreport'>
-            <Button variant="outline" className="w-full justify-start">
-              View Report
-            </Button>
+              <Button variant="outline" className="w-full justify-start">
+                View Report
+              </Button>
             </Link>
           </div>
-          
           <div className="p-3 border-b">
             <Link href='/main'>
-            <Button variant="outline" className="w-full justify-start">
-              Change Location
-            </Button>
+              <Button variant="outline" className="w-full justify-start">
+                Change Location
+              </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Bottom Navigation for Mobile */}
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 z-10">
+          <Link href='/main/analysis/viewreport'>
+            <Button variant="outline" size="sm" className="flex-1 mx-1">
+              View Report
+            </Button>
+          </Link>
+          <Link href='/main'>
+            <Button variant="outline" size="sm" className="flex-1 mx-1">
+              Change Location
+            </Button>
+          </Link>
         </div>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
           {/* Top Controls for Analysis and Date */}
-          <div className="flex justify-between items-center p-2 border-b">
-            <div className="flex items-center space-x-4">
-              <div>
-                <Button variant="outline" size="sm">
-                  {useCaseLabel}
-                </Button>
-              </div>
-              <div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      {fromDate ? format(fromDate, "PPP") : "From Date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={fromDate}
-                      onSelect={setFromDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      {toDate ? format(toDate, "PPP") : "To Date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={toDate}
-                      onSelect={setToDate}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          <div className="flex flex-col sm:flex-row justify-between items-center p-2 border-b space-y-2 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                {useCaseLabel}
+              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    {fromDate ? format(fromDate, "PPP") : "From Date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={fromDate}
+                    onSelect={setFromDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                    {toDate ? format(toDate, "PPP") : "To Date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={toDate}
+                    onSelect={setToDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-            
-            
           </div>
           
           {/* Map Container */}
-          <div className="flex-1 relative" ref={mapContainerRef}>
+          <div className="flex-1 relative pb-16 sm:pb-0" ref={mapContainerRef}>
             {/* Map will be rendered here by Mapbox GL JS */}
           </div>
         </div>

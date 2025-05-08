@@ -1,4 +1,3 @@
-// help.jsx or help.tsx
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -8,71 +7,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 
 export default function HelpPage() {
   return (
-    <div className="container  py-10 px-10">
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Left Section - Contact Form */}
-        <div className="md:col-span-2">
-          <h2 className="text-2xl font-semibold mb-6">Help</h2>
-          
-          <Tabs defaultValue="email" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="email">Email</TabsTrigger>
-              <TabsTrigger value="phone">Phone</TabsTrigger>
-              <TabsTrigger value="chat">Live Chat</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="email" className="space-y-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <form className="space-y-4">
-                    <div>
-                      <Input placeholder="Your Name" />
-                    </div>
-                    <div>
-                      <Input placeholder="Email" />
-                    </div>
-                    <div>
-                      <Input placeholder="Subject" />
-                    </div>
-                    <div>
-                      <Textarea placeholder="Message" rows={5} />
-                    </div>
-                    <Button type="submit" className="w-full">Send</Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="phone">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Contact by Phone</h3>
-                    <p>Call our support team at: <span className="font-semibold">1-800-123-4567</span></p>
-                    <p>Hours of operation: Monday to Friday, 9am - 5pm EST</p>
-                    <p>For urgent matters, we're available 24/7 at our emergency line: <span className="font-semibold">1-888-999-0000</span></p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="chat">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Live Chat Support</h3>
-                    <p>Our chat support is available from 8am to 8pm, 7 days a week.</p>
-                    <Button className="w-full">Start Chat Now</Button>
-                    <p className="text-sm text-gray-500">Average wait time: 2 minutes</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        {/* Right Section - FAQs */}
-        <div>
+    <div className="container py-6 px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* FAQs Section - Top on Mobile */}
+        <div className="order-1 md:order-2 md:col-span-1">
           <h2 className="text-2xl font-semibold mb-6">Frequently Asked Questions</h2>
           
           <Accordion type="single" collapsible className="w-full">
@@ -102,6 +40,67 @@ export default function HelpPage() {
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+        </div>
+        
+        {/* Contact Form Section - Bottom on Mobile */}
+        <div className="order-2 md:order-1 md:col-span-2">
+          <h2 className="text-2xl font-semibold mb-6">Help</h2>
+          
+          <Tabs defaultValue="email" className="w-full">
+            <TabsList className="grid grid-cols-3 mb-6 gap-2 sm:gap-4">
+              <TabsTrigger value="email">Email</TabsTrigger>
+              <TabsTrigger value="phone">Phone</TabsTrigger>
+              <TabsTrigger value="chat">Live Chat</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="email" className="space-y-4">
+              <Card>
+                <CardContent className="pt-6">
+                  <form className="space-y-4">
+                    <div>
+                      <Input placeholder="Your Name" />
+                    </div>
+                    <div>
+                      <Input placeholder="Email" />
+                    </div>
+                    <div>
+                      <Input placeholder="Subject" />
+                    </div>
+                    <div>
+                      <Textarea placeholder="Message" rows={5} />
+                    </div>
+                    <Button type="submit" className="w-full bg-black text-white hover:bg-gray-800">Send</Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="phone">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Contact by Phone</h3>
+                    <p>Call our support team at: <span className="font-semibold">1-800-123-4567</span></p>
+                    <p>Hours of operation: Monday to Friday, 9am - 5pm EST</p>
+                    <p>For urgent matters, we're available 24/7 at our emergency line: <span className="font-semibold">1-888-999-0000</span></p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="chat">
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">Live Chat Support</h3>
+                    <p>Our chat support is available from 8am to 8pm, 7 days a week.</p>
+                    <Button className="w-full bg-black text-white hover:bg-gray-800">Start Chat Now</Button>
+                    <p className="text-sm text-gray-500">Average wait time: 2 minutes</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

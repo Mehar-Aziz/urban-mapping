@@ -1,7 +1,9 @@
 import ProfilePage from "@/components/profile/MyProfile"
+import Navbar from "@/components/Navbar"
 export default function Profile() {
     return (
-      <div className="p-6">
+      <div >
+        <Navbar/>
         <ProfilePage/>
       </div>
     )

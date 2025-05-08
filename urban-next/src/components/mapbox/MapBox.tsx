@@ -3,15 +3,19 @@
 import React, { useRef, useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu, ChevronLeft, ChevronRight, Layers, Search as SearchIcon } from "lucide-react"
 import { Button } from "@/components/ui/button";
+import { Input } from "../ui/input";
 import axios from "axios";
 import Link from "next/link";
+import { cn } from "@/lib/utils"
 
 const INITIAL_CENTER: [number, number] = [69.3451, 30.3753]; // Pakistan
 const INITIAL_ZOOM = 3.9;
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWVoYXItYXppeiIsImEiOiJjbTdwd3BicDcwMmF5MmxwaHJkeW13cnVvIn0.4MS6keg1jZvx4KOBDsTqug";
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
-const API_URL = "http://127.0.0.1:8000"; // Dynamic backend URL
+const API_URL = "http://127.0.0.1:8000"; 
 
 interface Asset {
   id: string;
@@ -38,10 +42,12 @@ const MapBox = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
-  const [assets, setAssets] = useState<Asset[]>([]); // State for stored assets
+  const [assets, setAssets] = useState<Asset[]>([]); 
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null); // State for selected asset
     const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
    const [zoom, setZoom] = useState(INITIAL_ZOOM);
+   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
 
   // Initialize the map
   useEffect(() => {
@@ -437,72 +443,188 @@ const MapBox = () => {
       console.error("No valid bounds found for the asset.");
     }
   };
+  // Detect screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      setSidebarOpen(!mobile) // Close sidebar by default on mobile
+    }
+    
+    checkScreenSize()
+    window.addEventListener('resize', checkScreenSize)
+    return () => window.removeEventListener('resize', checkScreenSize)
+  }, [])
+
+  // Wrapper functions to close sidebar on mobile after actions
+  const handleSearchWithSidebar = () => {
+    handleSearch()
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }
+
+  const handleAssetSelectionWithSidebar = (assetId: string) => {
+    handleAssetSelection(assetId)
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }
+
+  const handleUploadWithSidebar = () => {
+    handleUpload()
+    if (isMobile) {
+      // Set a short timeout to allow the upload to finish before closing
+      setTimeout(() => {
+        setSidebarOpen(false)
+      }, 500)
+    }
+  }
+
 
   return (
-  <div className="flex w-full h-[100vh]">
-    {/* Left Sidebar */}
-    <div className="w-[20%] p-4 bg-gray-200">
-      <h2 className="text-lg font-semibold">Upload KML</h2>
-      <input type="file" accept=".kml" onChange={handleFileUpload} className="mt-2" />
-      <Button onClick={handleUpload} className="mt-2" disabled={loading}>
-        {loading ? "Uploading..." : "Upload"}
-      </Button>
-
-      {/* Search Functionality */}
+    <div className="flex flex-col md:flex-row w-full h-[100vh] relative">
+      {/* Mobile Sidebar Toggle Button */}
+      <button 
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="md:hidden absolute top-2 left-2 z-20 bg-white p-2 rounded-md shadow-md"
+        aria-label="Toggle sidebar"
+      >
+        {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
+      </button>
       
-      <input
-           type="text"
-           placeholder="Search location"
-           value={searchQuery}
-           onChange={(e) => setSearchQuery(e.target.value)}
-           className="w-full mt-2 p-2 border border-[#000] rounded"
-         />
-         <Button onClick={handleSearch} className="mt-2">Search</Button>
+      {/* Left Sidebar - Desktop */}
+      <div 
+        className={cn(
+          "w-80 md:w-80 lg:w-70 bg-gray-50 shadow-md overflow-y-auto transition-all duration-300",
+          isMobile ? "absolute z-10 h-full" : "relative",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0"
+        )}
+      >
+        <div className="p-4">
+          <h2 className="text-xl font-semibold mb-4">Upload KML</h2>
+          
+          {/* File Upload */}
+          <div className="mb-6 p-4 border border-dashed border-gray-300 rounded-lg">
+            <input 
+              type="file" 
+              accept=".kml" 
+              onChange={handleFileUpload} 
+              className="w-full text-sm" 
+              id="kml-upload"
+            />
+            <Button 
+              onClick={handleUploadWithSidebar} 
+              className="w-full mt-3" 
+              disabled={loading}
+            >
+              {loading ? "Uploading..." : "Upload"}
+            </Button>
+          </div>
 
-{/* Error Message */}
-{error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-      {/* Coordinates Display */}
-      {coordinates && (
-        <p className="mt-2 text-sm">
-          Coordinates: Lat {coordinates.lat.toFixed(4)}, Lng {coordinates.lng.toFixed(4)}
-        </p>
-      )}
+          {/* Search Functionality */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-2">Search Location</h2>
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                placeholder="Enter location name"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Button onClick={handleSearchWithSidebar} size="icon">
+                <SearchIcon size={18} />
+              </Button>
+            </div>
+            
+            {/* Error Message */}
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          </div>
 
-      
+          {/* Stored Assets */}
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Stored Assets</h2>
+            {assets.length === 0 ? (
+              <p className="text-gray-500 text-sm">No assets found</p>
+            ) : (
+              <ul className="space-y-2">
+                {assets.map((asset) => (
+                  <li key={asset.id} className="flex justify-between items-center p-2 bg-white rounded shadow-sm">
+                    <span className="text-sm font-medium truncate flex-1">{asset.name}</span>
+                    <Button 
+                      onClick={() => handleAssetSelectionWithSidebar(asset.id)} 
+                      size="sm" 
+                      variant="outline"
+                    >
+                      View
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
 
-      {/* Stored Assets */}
-      <h2 className="text-lg font-semibold mt-4">Stored Assets</h2>
-      <ul className="mt-2">
-        {assets.map((asset) => (
-          <li key={asset.id} className="flex justify-between items-center mt-2">
-            <span>{asset.name}</span>
-            <Button onClick={() => handleAssetSelection(asset.id)}>View</Button>
-          </li>
-        ))}
-      </ul>
+      {/* Map Container */}
+      <div className={cn(
+        "flex-1 relative transition-all duration-300",
+        sidebarOpen && !isMobile ? "md:ml-0" : "ml-0"
+      )}>
+        {/* Map Info Panel */}
+        <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-black bg-opacity-75 text-white p-2 md:p-3 rounded-lg shadow-md z-1 text-xs md:text-sm max-w-full">
+          <span className="whitespace-nowrap">
+            Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
+          </span>
+        </div>
+        
+        {/* Mobile Controls - Sheet for small screens */}
+        <div className="md:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button size="icon" className="rounded-full shadow-lg">
+                <Layers size={20} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-72">
+              <div className="space-y-4 pt-2">
+                <Button 
+                  onClick={handleReset} 
+                  className="w-50" 
+                  variant="outline"
+                >
+                  Reset Map
+                </Button>  
+                <Link href="/main/analysis" className="block w-full">
+                  <Button className="w-50 items-center">
+                    Select & Continue
+                  </Button>
+                </Link>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Desktop Map Controls */}
+        <Button 
+          className="absolute top-16 left-4 z-10 hidden md:flex" 
+          onClick={handleReset}
+          variant="outline"
+        >
+          Reset
+        </Button>
+        
+        <Link href="/main/analysis" className="hidden md:block">
+          <Button className="absolute bottom-6 right-6 z-10 px-6">
+            Select
+          </Button>
+        </Link>
+
+        {/* Map */}
+        <div ref={mapContainerRef} className="w-full h-full" />
+      </div>
     </div>
-
-    {/* Map Container */}
-    <div className="w-[80%] relative">
-    <div className="absolute top-2 left-2 bg-[#000000] bg-opacity-90 text-white p-2 rounded-lg shadow-md z-1">
-             Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
-           </div>
-      
-
-      {/* Reset Button */}
-      <Button className="absolute top-[60px] left-[12px] z-10 px-5 py-1 rounded-lg" onClick={handleReset}>
-        Reset
-      </Button>
-<Link href="/main/analysis">
-      <Button className="absolute top-[520px] right-[30px] z-10 px-5 py-1 rounded-lg" >
-        Select
-      </Button>
-      </Link>
-
-      {/* Map */}
-      <div ref={mapContainerRef} className="w-full h-full" />
-    </div>
-  </div>
-);
+  )
 };
 export default MapBox;

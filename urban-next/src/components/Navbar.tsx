@@ -59,8 +59,9 @@ export default function Navbar() {
 
         {/* Desktop Nav Links */}
         <nav className="hidden md:flex space-x-6">
-          <Link href="/main" className="text-gray-700 hover:text-blue-600">Map</Link>
-          <Link href="/help" className="text-gray-700 hover:text-blue-600">Help</Link>
+        <Link href="/" className="text-gray-700 hover:text-green-800">Home</Link>
+          <Link href="/main" className="text-gray-700 hover:text-green-800">Map</Link>
+          <Link href="/help" className="text-gray-700 hover:text-green-800">Help</Link>
         </nav>
 
         {/* Right-side actions */}

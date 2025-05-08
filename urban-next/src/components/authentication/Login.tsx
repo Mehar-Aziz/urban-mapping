@@ -77,7 +77,7 @@ export default function Login() {
         Login
       </h2>
       <CardContent>
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-[#00674F] mb-1">
               Email

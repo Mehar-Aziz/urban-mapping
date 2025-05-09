@@ -40,6 +40,11 @@ export default function Navbar() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
+            <Link href="/" passHref legacyBehavior>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <a>Home</a>
+                </DropdownMenuItem>
+              </Link>
               <Link href="/main" passHref legacyBehavior>
                 <DropdownMenuItem asChild className="cursor-pointer">
                   <a>Map</a>

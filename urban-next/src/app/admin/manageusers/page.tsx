@@ -1,23 +1,37 @@
-import Navbar from "@/components/admin/AdminNav";
-import ManageUserPage from "@/components/admin/ManageUsers";
-import Sidebar from "@/components/admin/AdminSidebar";
+'use client'
 
-export default function Profile() {
+import { useState } from 'react'
+import Navbar from '@/components/admin/AdminNav'
+import Sidebar from '@/components/admin/AdminSidebar'
+import ManageUserPage from '@/components/admin/ManageUsers'
+
+export default function AdminLayout() {
+  // State to manage sidebar visibility on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen)
+  }
+  
+  const closeSidebar = () => {
+    setSidebarOpen(false)
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      <Navbar />
-
-      <div className="flex flex-1">
-        {/* Sidebar fixed width */}
-        <div className="w-64">
-          <Sidebar />
-        </div>
-
-        {/* Main content grows */}
-        <div className="flex-1 p-8">
+    <div className="flex flex-col min-h-screen">
+      {/* Navbar at the top */}
+      <Navbar toggleSidebar={toggleSidebar} />
+      
+      {/* Main content area with sidebar and dashboard */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar - will be hidden on mobile until toggled */}
+        <Sidebar isOpen={sidebarOpen} closeSidebar={closeSidebar} />
+        
+        {/* Main content area - takes remaining width */}
+        <main className="flex-1 overflow-y-auto">
           <ManageUserPage />
-        </div>
+        </main>
       </div>
     </div>
-  );
+  )
 }

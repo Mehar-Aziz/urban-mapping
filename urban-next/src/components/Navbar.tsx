@@ -154,7 +154,7 @@ export default function Navbar() {
       </nav>
 
       {/* Add padding to the bottom of the page on mobile to account for the bottom navbar */}
-      <div className="md:hidden h-16"></div>
+      <div className="md:hidden"></div>
 
       <CreateProjectModal open={open} setOpen={setOpen} />
     </>

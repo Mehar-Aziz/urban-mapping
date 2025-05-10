@@ -573,15 +573,15 @@ const MapBox = () => {
         sidebarOpen && !isMobile ? "md:ml-0" : "ml-0"
       )}>
         {/* Map Info Panel */}
-        <div className="absolute top-2 left-2 md:top-4 md:left-4 bg-black bg-opacity-75 text-white p-2 md:p-3 rounded-lg shadow-md z-1 text-xs md:text-sm max-w-full">
+        <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-black bg-opacity-75 text-white p-2 md:p-3 rounded-lg shadow-md z-1 text-xs md:text-sm max-w-full">
           <span className="whitespace-nowrap">
             Longitude: {center[0].toFixed(4)} | Latitude: {center[1].toFixed(4)} | Zoom: {zoom.toFixed(2)}
           </span>
         </div>
         
         {/* Mobile Controls - Sheet for small screens */}
-        <div className="md:hidden absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
-          <Sheet>
+        <div className="md:hidden absolute bottom-35 right-4 transform -translate-x-1/2 z-10">
+          <Sheet> 
             <SheetTrigger asChild>
               <Button size="icon" className="rounded-full shadow-lg">
                 <Layers size={20} />
@@ -608,7 +608,7 @@ const MapBox = () => {
 
         {/* Desktop Map Controls */}
         <Button 
-          className="absolute top-16 left-4 z-10 hidden md:flex" 
+          className="absolute top-16 right-4 z-10 hidden md:flex" 
           onClick={handleReset}
           variant="outline"
         >

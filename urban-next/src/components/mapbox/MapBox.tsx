@@ -43,48 +43,92 @@ const MapBox = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]); 
-  const [selectedAsset, setSelectedAsset] = useState<string | null>(null); // State for selected asset
-    const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
-   const [zoom, setZoom] = useState(INITIAL_ZOOM);
-   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
+  const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
+  const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
+  const [zoom, setZoom] = useState(INITIAL_ZOOM);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
-  // Initialize the map
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
+  // Process coordinates for GeoJSON bounds calculation
+  const processCoordinates = (coords: any, bounds: mapboxgl.LngLatBounds) => {
+    if (Array.isArray(coords[0])) {
+      coords.forEach((coord: any) => processCoordinates(coord, bounds));
+    } else {
+      bounds.extend(coords);
+    }
+  };
 
-    mapboxgl.accessToken = MAPBOX_TOKEN;
-    mapRef.current = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      center: center,
-      zoom: zoom,
-      style: "mapbox://styles/mapbox/satellite-streets-v12",
-    });
-
-    if (mapRef.current) {
-      mapRef.current.on("move", () => {
-        const mapInstance = mapRef.current;
-        if (!mapInstance) return;
-
-        const mapCenter = mapInstance.getCenter();
-        const mapZoom = mapInstance.getZoom();
-
-        setCenter([mapCenter.lng, mapCenter.lat]);
-        setZoom(mapZoom);
-      });
+  // Process GeoJSON to extract bounds
+  const processGeoJSON = (geojson: GeoJSON) => {
+    if (!geojson || !geojson.type) {
+      console.error("Invalid GeoJSON: Missing type");
+      return new mapboxgl.LngLatBounds();
     }
 
-    mapRef.current = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      center: INITIAL_CENTER,
-      zoom: INITIAL_ZOOM,
-      style: "mapbox://styles/mapbox/satellite-streets-v12",
-    });
+    const bounds = new mapboxgl.LngLatBounds();
 
-    return () => {
-      mapRef.current?.remove();
-    };
-  }, []);
+    // Handle FeatureCollection
+    if (geojson.type === "FeatureCollection") {
+      if (!geojson.features || !Array.isArray(geojson.features)) {
+        console.error("Invalid GeoJSON: Missing features array");
+        return bounds;
+      }
+
+      geojson.features.forEach((feature: any) => {
+        if (!feature.geometry || !feature.geometry.coordinates) {
+          console.error("Invalid feature: Missing geometry or coordinates");
+          return;
+        }
+
+        if (feature.geometry.type === "Polygon") {
+          feature.geometry.coordinates.forEach((ring: any) => processCoordinates(ring, bounds));
+        } else if (feature.geometry.type === "MultiPolygon") {
+          feature.geometry.coordinates.forEach((polygon: any) => {
+            polygon.forEach((ring: any) => processCoordinates(ring, bounds));
+          });
+        } else if (feature.geometry.type === "LineString") {
+          processCoordinates(feature.geometry.coordinates, bounds);
+        } else if (feature.geometry.type === "Point") {
+          bounds.extend(feature.geometry.coordinates);
+        }
+      });
+    }
+    // Handle single Feature
+    else if (geojson.type === "Feature") {
+      if (!geojson.geometry || !geojson.geometry.coordinates) {
+        console.error("Invalid feature: Missing geometry or coordinates");
+        return bounds;
+      }
+
+      if (geojson.geometry.type === "Polygon") {
+        geojson.geometry.coordinates.forEach((ring: any) => processCoordinates(ring, bounds));
+      } else if (geojson.geometry.type === "MultiPolygon") {
+        geojson.geometry.coordinates.forEach((polygon: any) => {
+          polygon.forEach((ring: any) => processCoordinates(ring, bounds));
+        });
+      } else if (geojson.geometry.type === "LineString") {
+        processCoordinates(geojson.geometry.coordinates, bounds);
+      } else if (geojson.geometry.type === "Point") {
+        bounds.extend(geojson.geometry.coordinates);
+      }
+    }
+    // Handle standalone Geometry
+    else if (geojson.type === "Polygon" || geojson.type === "MultiPolygon" || geojson.type === "LineString" || geojson.type === "Point") {
+      if (geojson.type === "Polygon") {
+        geojson.coordinates?.forEach((ring: any) => processCoordinates(ring, bounds));
+      } else if (geojson.type === "MultiPolygon") {
+        geojson.coordinates?.forEach((polygon: any) => {
+          polygon.forEach((ring: any) => processCoordinates(ring, bounds));
+        });
+      } else if (geojson.type === "LineString") {
+        processCoordinates(geojson.coordinates, bounds);
+      } else if (geojson.type === "Point") {
+        bounds.extend(geojson.coordinates);
+      }
+    }
+
+    return bounds;
+  };
 
   // Remove existing layers and sources from the map
   const removeExistingBoundaries = () => {
@@ -113,17 +157,62 @@ const MapBox = () => {
     }
   };
 
+  // Initialize the map
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapRef.current = new mapboxgl.Map({
+      container: mapContainerRef.current,
+      center: INITIAL_CENTER,
+      zoom: INITIAL_ZOOM,
+      style: "mapbox://styles/mapbox/satellite-streets-v12",
+    });
+
+    if (mapRef.current) {
+      mapRef.current.on("move", () => {
+        const mapInstance = mapRef.current;
+        if (!mapInstance) return;
+
+        const mapCenter = mapInstance.getCenter();
+        const mapZoom = mapInstance.getZoom();
+
+        setCenter([mapCenter.lng, mapCenter.lat]);
+        setZoom(mapZoom);
+      });
+    }
+
+    return () => {
+      mapRef.current?.remove();
+    };
+  }, []);
+
+  // Detect screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      setSidebarOpen(!mobile); // Close sidebar by default on mobile
+    };
+    
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   // Reset the map to its initial state
   const handleReset = () => {
     removeExistingBoundaries();
     setError("");
-    setCoordinates(null); // Clear coordinates
-    setSelectedAsset(null); // Clear selected asset
+    setCoordinates(null);
+    setSelectedAsset(null);
     mapRef.current?.flyTo({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM });
   };
 
   // Handle file selection
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // Clear previous errors when selecting a new file
+    setError("");
     if (!event.target.files || event.target.files.length === 0) return;
     setFile(event.target.files[0]);
   };
@@ -168,13 +257,10 @@ const MapBox = () => {
         });
 
         // Adjust the map view to fit the boundaries
-        const bounds = new mapboxgl.LngLatBounds();
-        response.data.geoJson.features.forEach((feature: any) => {
-          feature.geometry.coordinates[0].forEach((coord: any) => {
-            bounds.extend(coord);
-          });
-        });
-        mapRef.current?.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        const bounds = processGeoJSON(response.data.geoJson);
+        if (!bounds.isEmpty()) {
+          mapRef.current?.fitBounds(bounds, { padding: 50, maxZoom: 14 });
+        }
 
         // Store the asset
         const newAsset: Asset = {
@@ -198,18 +284,50 @@ const MapBox = () => {
   // Handle location search
   const handleSearch = async () => {
     if (!searchQuery.trim() || !mapRef.current) return;
-
+    
+    // Clear previous error when starting a new search
+    setError("");
+    
     try {
       const response = await axios.get(NOMINATIM_API, {
-        params: { q: searchQuery, format: "json", polygon_geojson: 1, limit: 1 },
+        params: { 
+          q: searchQuery, 
+          format: "json", 
+          polygon_geojson: 1, 
+          limit: 1,
+          // Adding addressdetails for better validation
+          addressdetails: 1 
+        },
       });
 
-      console.log("Nominatim API Response:", response.data); // Debugging log
+      console.log("Nominatim API Response:", response.data);
 
       if (response.data.length > 0) {
-        const { lat, lon, geojson } = response.data[0];
-
-        console.log("GeoJSON Data:", geojson); // Debugging log
+        const result = response.data[0];
+        const { lat, lon, geojson, display_name, address } = result;
+        
+        // Validate the search result by checking if parts of the search query appear in the result
+        const queryParts = searchQuery.toLowerCase().split(/[,\s]+/).filter(part => part.length > 2);
+        const displayNameLower = display_name.toLowerCase();
+        
+        // Check for potentially incorrect locations by looking for mismatch in query terms
+        // For example: "Delhi, Pakistan" - if Pakistan is in query but not in country field
+        const hasGeographicalMismatch = queryParts.some(part => {
+          // If part mentions a country or major region that doesn't match result
+          if (part.length > 3 && 
+              (address.country?.toLowerCase()?.indexOf(part) === -1) && 
+              displayNameLower.indexOf(part) === -1) {
+            // Check if this part might be a country or region name
+            const potentialCountryTerms = ['pakistan', 'india', 'china', 'usa', 'america', 'europe', 'africa', 'asia'];
+            return potentialCountryTerms.includes(part);
+          }
+          return false;
+        });
+        
+        if (hasGeographicalMismatch) {
+          setError(`Found "${display_name}" but it may not match your search query. Please check and be more specific.`);
+          return;
+        }
 
         // Set the coordinates state
         setCoordinates({ lat: parseFloat(lat), lng: parseFloat(lon) });
@@ -243,37 +361,12 @@ const MapBox = () => {
         });
 
         // Process the GeoJSON and fit the map to the bounds
-        const processGeoJSON = (geojson: GeoJSON) => {
-          const bounds = new mapboxgl.LngLatBounds();
-
-          const processCoordinates = (coords: any) => {
-            if (Array.isArray(coords[0])) {
-              coords.forEach((coord: any) => processCoordinates(coord));
-            } else {
-              bounds.extend(coords);
-            }
-          };
-
-          if (geojson.type === "Polygon") {
-            geojson.coordinates?.forEach((ring: any) => processCoordinates(ring));
-          } else if (geojson.type === "MultiPolygon") {
-            geojson.coordinates?.forEach((polygon: any) => {
-              polygon.forEach((ring: any) => processCoordinates(ring));
-            });
-          } else if (geojson.type === "LineString") {
-            processCoordinates(geojson.coordinates);
-          } else if (geojson.type === "Point") {
-            bounds.extend(geojson.coordinates);
-          }
-
-          return bounds;
-        };
-
         const bounds = processGeoJSON(geojson);
         if (!bounds.isEmpty()) {
           mapRef.current?.fitBounds(bounds, { padding: 50, maxZoom: 14 });
         } else {
           setError("Invalid boundary data for this location.");
+          return;
         }
 
         // Store the asset
@@ -284,12 +377,15 @@ const MapBox = () => {
           geoJson: geojson,
         };
         setAssets((prev) => [...prev, newAsset]);
+        
+        // Reset the search query after successful search
+        // setSearchQuery(""); // Uncomment if you want to clear the search box after search
       } else {
-        setError("Location not found.");
+        setError("Location not found. Please check your spelling or try a different search term.");
       }
     } catch (err) {
       console.error("Search failed:", err);
-      setError("Search failed. Try again.");
+      setError("Search failed. Please check your connection and try again.");
     }
   };
 
@@ -308,12 +404,6 @@ const MapBox = () => {
     const layerId = `${asset.type}-layer-${asset.id}`;
     const outlineId = `${asset.type}-outline-${asset.id}`;
 
-    // Validate GeoJSON structure
-    if (!asset.geoJson || !asset.geoJson.type) {
-      console.error("Invalid GeoJSON: Missing type");
-      return;
-    }
-
     // Add GeoJSON source and layers to the map
     mapRef.current.addSource(sourceId, { type: "geojson", data: asset.geoJson });
     mapRef.current.addLayer({
@@ -330,110 +420,12 @@ const MapBox = () => {
     });
 
     // Adjust the map view to fit the asset's boundaries
-    const bounds = new mapboxgl.LngLatBounds();
-
-    const processGeoJSON = (geojson: GeoJSON) => {
-      if (!geojson || !geojson.type) {
-        console.error("Invalid GeoJSON: Missing type");
-        return;
-      }
-
-      // Handle FeatureCollection
-      if (geojson.type === "FeatureCollection") {
-        if (!geojson.features || !Array.isArray(geojson.features)) {
-          console.error("Invalid GeoJSON: Missing features array");
-          return;
-        }
-
-        geojson.features.forEach((feature: any) => {
-          if (!feature.geometry || !feature.geometry.coordinates) {
-            console.error("Invalid feature: Missing geometry or coordinates");
-            return;
-          }
-
-          const processCoordinates = (coords: any) => {
-            if (Array.isArray(coords[0])) {
-              coords.forEach((coord: any) => processCoordinates(coord));
-            } else {
-              bounds.extend(coords);
-            }
-          };
-
-          if (feature.geometry.type === "Polygon") {
-            feature.geometry.coordinates.forEach((ring: any) => processCoordinates(ring));
-          } else if (feature.geometry.type === "MultiPolygon") {
-            feature.geometry.coordinates.forEach((polygon: any) => {
-              polygon.forEach((ring: any) => processCoordinates(ring));
-            });
-          } else if (feature.geometry.type === "LineString") {
-            processCoordinates(feature.geometry.coordinates);
-          } else if (feature.geometry.type === "Point") {
-            bounds.extend(feature.geometry.coordinates);
-          } else {
-            console.error("Unsupported geometry type:", feature.geometry.type);
-          }
-        });
-      }
-      // Handle single Feature
-      else if (geojson.type === "Feature") {
-        if (!geojson.geometry || !geojson.geometry.coordinates) {
-          console.error("Invalid feature: Missing geometry or coordinates");
-          return;
-        }
-
-        const processCoordinates = (coords: any) => {
-          if (Array.isArray(coords[0])) {
-            coords.forEach((coord: any) => processCoordinates(coord));
-          } else {
-            bounds.extend(coords);
-          }
-        };
-
-        if (geojson.geometry.type === "Polygon") {
-          geojson.geometry.coordinates.forEach((ring: any) => processCoordinates(ring));
-        } else if (geojson.geometry.type === "MultiPolygon") {
-          geojson.geometry.coordinates.forEach((polygon: any) => {
-            polygon.forEach((ring: any) => processCoordinates(ring));
-          });
-        } else if (geojson.geometry.type === "LineString") {
-          processCoordinates(geojson.geometry.coordinates);
-        } else if (geojson.geometry.type === "Point") {
-          bounds.extend(geojson.geometry.coordinates);
-        } else {
-          console.error("Unsupported geometry type:", geojson.geometry.type);
-        }
-      }
-      // Handle standalone Geometry
-      else if (geojson.type === "Polygon" || geojson.type === "MultiPolygon" || geojson.type === "LineString" || geojson.type === "Point") {
-        const processCoordinates = (coords: any) => {
-          if (Array.isArray(coords[0])) {
-            coords.forEach((coord: any) => processCoordinates(coord));
-          } else {
-            bounds.extend(coords);
-          }
-        };
-
-        if (geojson.type === "Polygon") {
-          geojson.coordinates?.forEach((ring: any) => processCoordinates(ring));
-        } else if (geojson.type === "MultiPolygon") {
-          geojson.coordinates?.forEach((polygon: any) => {
-            polygon.forEach((ring: any) => processCoordinates(ring));
-          });
-        } else if (geojson.type === "LineString") {
-          processCoordinates(geojson.coordinates);
-        } else if (geojson.type === "Point") {
-          bounds.extend(geojson.coordinates);
-        }
-      } else {
-        console.error("Unsupported GeoJSON type:", geojson.type);
-      }
-    };
-
-    processGeoJSON(asset.geoJson);
-
+    const bounds = processGeoJSON(asset.geoJson);
+    
     if (!bounds.isEmpty()) {
       // Add padding for Point geometries
-      if (bounds.getNorthEast().lng === bounds.getSouthWest().lng && bounds.getNorthEast().lat === bounds.getSouthWest().lat) {
+      if (bounds.getNorthEast().lng === bounds.getSouthWest().lng && 
+          bounds.getNorthEast().lat === bounds.getSouthWest().lat) {
         bounds.extend([bounds.getNorthEast().lng + 0.01, bounds.getNorthEast().lat + 0.01]);
         bounds.extend([bounds.getSouthWest().lng - 0.01, bounds.getSouthWest().lat - 0.01]);
       }
@@ -443,44 +435,33 @@ const MapBox = () => {
       console.error("No valid bounds found for the asset.");
     }
   };
-  // Detect screen size
-  useEffect(() => {
-    const checkScreenSize = () => {
-      const mobile = window.innerWidth < 768
-      setIsMobile(mobile)
-      setSidebarOpen(!mobile) // Close sidebar by default on mobile
-    }
-    
-    checkScreenSize()
-    window.addEventListener('resize', checkScreenSize)
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
 
   // Wrapper functions to close sidebar on mobile after actions
   const handleSearchWithSidebar = () => {
-    handleSearch()
+    // Clear previous error when initiating a new search via UI
+    setError("");
+    handleSearch();
     if (isMobile) {
-      setSidebarOpen(false)
+      setSidebarOpen(false);
     }
-  }
+  };
 
   const handleAssetSelectionWithSidebar = (assetId: string) => {
-    handleAssetSelection(assetId)
+    handleAssetSelection(assetId);
     if (isMobile) {
-      setSidebarOpen(false)
+      setSidebarOpen(false);
     }
-  }
+  };
 
   const handleUploadWithSidebar = () => {
-    handleUpload()
+    handleUpload();
     if (isMobile) {
       // Set a short timeout to allow the upload to finish before closing
       setTimeout(() => {
-        setSidebarOpen(false)
-      }, 500)
+        setSidebarOpen(false);
+      }, 500);
     }
-  }
-
+  };
 
   return (
     <div className="flex flex-col md:flex-row w-full h-[100vh] relative">
@@ -493,7 +474,7 @@ const MapBox = () => {
         {sidebarOpen ? <ChevronLeft size={20} /> : <ChevronRight size={20} />}
       </button>
       
-      {/* Left Sidebar - Desktop */}
+      {/* Left Sidebar */}
       <div 
         className={cn(
           "w-80 md:w-80 lg:w-70 bg-gray-50 shadow-md overflow-y-auto transition-all duration-300",
@@ -530,7 +511,16 @@ const MapBox = () => {
                 type="text"
                 placeholder="Enter location name"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  // Clear error when user types in search box
+                  if (error) setError("");
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearchWithSidebar();
+                  }
+                }}
                 className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <Button onClick={handleSearchWithSidebar} size="icon">
@@ -539,7 +529,11 @@ const MapBox = () => {
             </div>
             
             {/* Error Message */}
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-2 mt-2">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
           </div>
 
           {/* Stored Assets */}
@@ -616,7 +610,7 @@ const MapBox = () => {
         </Button>
         
         <Link href="/main/analysis" className="hidden md:block">
-          <Button className="absolute bottom-6 right-6 z-10 px-6">
+          <Button className="absolute bottom-22 right-6 z-10 px-6">
             Select
           </Button>
         </Link>
@@ -625,6 +619,7 @@ const MapBox = () => {
         <div ref={mapContainerRef} className="w-full h-full" />
       </div>
     </div>
-  )
+  );
 };
+
 export default MapBox;

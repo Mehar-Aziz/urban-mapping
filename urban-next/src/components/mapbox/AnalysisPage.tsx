@@ -20,8 +20,8 @@ import Link from "next/link";
 import mapboxgl from "mapbox-gl";
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const INITIAL_CENTER: [number, number] = [69.3451, 30.3753]; // Pakistan
-const INITIAL_ZOOM = 3.9;
+const INITIAL_CENTER: [number, number] = [74.3587, 31.5204]; // Lahore
+const INITIAL_ZOOM = 9;
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWVoYXItYXppeiIsImEiOiJjbTdwd3BicDcwMmF5MmxwaHJkeW13cnVvIn0.4MS6keg1jZvx4KOBDsTqug";
 const NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
 const API_URL = "http://127.0.0.1:8000";
@@ -60,6 +60,27 @@ export default function MapPage() {
     });
 
     mapRef.current = map;
+
+     fetch("http://127.0.0.1:8000/geojson/lahore-ucs")
+    .then((res) => res.json())
+    .then((geojson) => {
+      map.addSource("lahore-ucs", {
+        type: "geojson",
+        data: geojson,
+      });
+
+      map.addLayer({
+        id: "lahore-uc-lines",
+        type: "line",
+        source: "lahore-ucs",
+        paint: {
+          "line-color": "#FF0000",
+          "line-width": 3,
+        },
+      });
+
+      
+    });
 
     map.on('move', () => {
       const center = map.getCenter();

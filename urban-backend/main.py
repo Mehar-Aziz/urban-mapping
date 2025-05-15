@@ -39,3 +39,9 @@ def get_ndvi_geojson():
 def get_thermal_data():
     file_path = os.path.join("data", "LST_Per_UC.geojson")
     return FileResponse(file_path, media_type="application/json")
+
+@app.get("/geojson/air-quality")
+def get_air_quality_geojson():
+    file_path = os.path.join("data", "AQI.geojson")
+    return FileResponse(file_path, media_type="application/json")
+

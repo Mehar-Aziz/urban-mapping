@@ -28,9 +28,9 @@ const API_URL = "http://127.0.0.1:8000";
 
 // Use case options
 const USE_CASES = [
-  { value: "air-analysis", label: "Air Analysis" },
-  { value: "soil-analysis", label: "Soil Analysis" },
-  { value: "water-resources", label: "Water Resources" }
+  { value: "air-quality-analysis", label: "Air Quality Analysis" },
+  { value: "ndvi-analysis", label: "NDVI Analysis" },
+  { value: "thermal-analysis", label: "Thermal Analysis" }
 ];
 
 export default function MapPage() {
@@ -38,11 +38,8 @@ export default function MapPage() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
-  
-  // State for use case selection
-  const [selectedUseCase, setSelectedUseCase] = useState("air-analysis");
-  const [useCaseLabel, setUseCaseLabel] = useState("Air Analysis");
-  
+  const [selectedUseCase, setSelectedUseCase] = useState("air-quality-analysis");
+  const [useCaseLabel, setUseCaseLabel] = useState("Air Quality Analysis");
   // State for calendar dates
   const [fromDate, setFromDate] = useState<Date | undefined>(new Date());
   const [toDate, setToDate] = useState<Date | undefined>(new Date());

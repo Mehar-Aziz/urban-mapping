@@ -43,8 +43,8 @@ export default function MapPage() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [center, setCenter] = useState<[number, number]>(INITIAL_CENTER);
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
-  const [selectedUseCase, setSelectedUseCase] = useState("air-quality-analysis");
-  const [useCaseLabel, setUseCaseLabel] = useState("Air Quality Analysis");
+  const [selectedUseCase, setSelectedUseCase] = useState("");
+  const [useCaseLabel, setUseCaseLabel] = useState("Select Use Case");
   const [fromDate, setFromDate] = useState<Date | undefined>(new Date());
   const [toDate, setToDate] = useState<Date | undefined>(new Date());
 
@@ -114,15 +114,18 @@ export default function MapPage() {
   }, []);
 
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) return;
+  const map = mapRef.current;
+  if (!map || !map.isStyleLoaded() || !selectedUseCase) return;
 
-    removeNDVILayer(map);
-    removeThermalLayer(map);
+  removeNDVILayer(map);
+  removeThermalLayer(map);
+  removeAirQualityLayer(map);
 
-    if (selectedUseCase === "ndvi-analysis") loadNDVILayer(map);
-    if (selectedUseCase === "thermal-analysis") loadThermalLayer(map);
-  }, [selectedUseCase]);
+  if (selectedUseCase === "ndvi-analysis") loadNDVILayer(map);
+  if (selectedUseCase === "thermal-analysis") loadThermalLayer(map);
+  if (selectedUseCase === "air-quality-analysis") loadAirQualityLayer(map);
+}, [selectedUseCase]);
+
 
   const loadNDVILayer = (map: mapboxgl.Map) => {
     fetch(`${API_URL}/geojson/ndvi`)
@@ -198,6 +201,41 @@ export default function MapPage() {
     if (map.getSource("thermal-data")) map.removeSource("thermal-data");
   };
 
+  const loadAirQualityLayer = (map: mapboxgl.Map) => {
+  fetch(`${API_URL}/geojson/air-quality`)
+    .then(res => res.json())
+    .then(geojson => {
+      map.addSource("air-quality-data", {
+        type: "geojson",
+        data: geojson
+      });
+
+      map.addLayer({
+        id: "air-quality-fill",
+        type: "fill",
+        source: "air-quality-data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "AQI"],
+      0, "#a1dab4",     // Good
+      50, "#41b6c4",    // Moderate
+      100, "#2c7fb8",   // Unhealthy for Sensitive Groups
+      231.82, "#253494",   // Unhealthy
+      232.21, "#fed976",   // Very Unhealthy
+      300, "#fd8d3c"],
+        }
+      }, "lahore-uc-lines");
+    });
+};
+
+const removeAirQualityLayer = (map: mapboxgl.Map) => {
+  if (map.getLayer("air-quality-fill")) map.removeLayer("air-quality-fill");
+  if (map.getSource("air-quality-data")) map.removeSource("air-quality-data");
+};
+
+
   const handleUseCaseChange = (value: string) => {
     setSelectedUseCase(value);
     const selected = USE_CASES.find(option => option.value === value);
@@ -208,6 +246,13 @@ export default function MapPage() {
     <div className="flex flex-col h-screen">
       <div className="flex flex-col sm:flex-row items-center p-2 sm:p-4 border-b space-y-2 sm:space-y-0">
         <div className="flex flex-col sm:flex-row sm:space-x-2 w-full sm:w-auto">
+          <Select>
+            <SelectTrigger className="w-full sm:w-40 h-9">
+              <SelectValue placeholder="Lahore" />
+            </SelectTrigger>
+            <SelectContent>
+            </SelectContent>
+          </Select>
           <Select value={selectedUseCase} onValueChange={handleUseCaseChange}>
             <SelectTrigger className="w-full sm:w-40 h-9">
               <SelectValue placeholder="Select Use Case" />
@@ -313,6 +358,19 @@ export default function MapPage() {
                 <LegendItem color="#a50026" label=">315" />
               </div>
             )}
+            {selectedUseCase === "air-quality-analysis" && (
+  <div>
+    <h4 className="font-semibold mb-1">Air Quality Index (AQI)</h4>
+    <LegendItem color="#a1dab4" label="0 - 50 (Good)" />
+    <LegendItem color="#41b6c4" label="51 - 100 (Moderate)" />
+    <LegendItem color="#2c7fb8" label="101 - 150 (Unhealthy for Sensitive Groups)" />
+    <LegendItem color="#253494" label="151 - 200 (Unhealthy)" />
+    <LegendItem color="#fed976" label="201 - 300 (Very Unhealthy)" />
+    <LegendItem color="#fd8d3c" label="301 - 400 (Hazardous)" />
+    <LegendItem color="#e31a1c" label="> 400 (Extremely Hazardous)" />
+  </div>
+)}
+
           </div>
 
           <div className="flex-1 relative pb-16 sm:pb-0" ref={mapContainerRef}></div>
@@ -321,3 +379,4 @@ export default function MapPage() {
     </div>
   );
 }
+

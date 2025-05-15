@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -10,10 +10,10 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { 
+import {
   Popover,
   PopoverContent,
-  PopoverTrigger 
+  PopoverTrigger
 } from "@/components/ui/popover";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -23,15 +23,20 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 const INITIAL_CENTER: [number, number] = [74.3587, 31.5204]; // Lahore
 const INITIAL_ZOOM = 9;
 const MAPBOX_TOKEN = "pk.eyJ1IjoibWVoYXItYXppeiIsImEiOiJjbTdwd3BicDcwMmF5MmxwaHJkeW13cnVvIn0.4MS6keg1jZvx4KOBDsTqug";
-const NOMINATIM_API = "https://nominatim.openstreetmap.org/search";
 const API_URL = "http://127.0.0.1:8000";
 
-// Use case options
 const USE_CASES = [
   { value: "air-quality-analysis", label: "Air Quality Analysis" },
   { value: "ndvi-analysis", label: "NDVI Analysis" },
   { value: "thermal-analysis", label: "Thermal Analysis" }
 ];
+
+const LegendItem = ({ color, label }: { color: string; label: string }) => (
+  <div className="flex items-center space-x-2">
+    <span className="w-4 h-4 rounded-sm" style={{ backgroundColor: color }}></span>
+    <span>{label}</span>
+  </div>
+);
 
 export default function MapPage() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -40,46 +45,66 @@ export default function MapPage() {
   const [zoom, setZoom] = useState(INITIAL_ZOOM);
   const [selectedUseCase, setSelectedUseCase] = useState("air-quality-analysis");
   const [useCaseLabel, setUseCaseLabel] = useState("Air Quality Analysis");
-  // State for calendar dates
   const [fromDate, setFromDate] = useState<Date | undefined>(new Date());
   const [toDate, setToDate] = useState<Date | undefined>(new Date());
 
-  // Initialize the map
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      center: center,
-      zoom: zoom,
+      center,
+      zoom,
       style: "mapbox://styles/mapbox/satellite-streets-v12",
     });
 
     mapRef.current = map;
 
-     fetch("http://127.0.0.1:8000/geojson/lahore-ucs")
-    .then((res) => res.json())
-    .then((geojson) => {
-      map.addSource("lahore-ucs", {
-        type: "geojson",
-        data: geojson,
+    // Add Lahore UC boundaries
+    fetch(`${API_URL}/geojson/lahore-ucs`)
+      .then(res => res.json())
+      .then(geojson => {
+        map.on("load", () => {
+          map.addSource("lahore-ucs", {
+            type: "geojson",
+            data: geojson
+          });
+
+          map.addLayer({
+            id: "lahore-uc-lines",
+            type: "line",
+            source: "lahore-ucs",
+            paint: {
+              "line-color": "#FF0000",
+              "line-width": 3
+            }
+          });
+
+          map.addLayer({
+            id: "uc-labels",
+            type: "symbol",
+            source: "lahore-ucs",
+            layout: {
+              "text-field": ["get", "UC"],
+              "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+              "text-size": 10,
+              "text-offset": [0, 0.6],
+              "text-anchor": "top"
+            },
+            paint: {
+              "text-color": "#000000",
+              "text-halo-color": "#ffffff",
+              "text-halo-width": 1
+            }
+          });
+
+          if (selectedUseCase === "ndvi-analysis") loadNDVILayer(map);
+          if (selectedUseCase === "thermal-analysis") loadThermalLayer(map);
+        });
       });
 
-      map.addLayer({
-        id: "lahore-uc-lines",
-        type: "line",
-        source: "lahore-ucs",
-        paint: {
-          "line-color": "#FF0000",
-          "line-width": 3,
-        },
-      });
-
-      
-    });
-
-    map.on('move', () => {
+    map.on("move", () => {
       const center = map.getCenter();
       setCenter([center.lng, center.lat]);
       setZoom(map.getZoom());
@@ -88,18 +113,99 @@ export default function MapPage() {
     return () => map.remove();
   }, []);
 
-  // Handle use case change
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+
+    removeNDVILayer(map);
+    removeThermalLayer(map);
+
+    if (selectedUseCase === "ndvi-analysis") loadNDVILayer(map);
+    if (selectedUseCase === "thermal-analysis") loadThermalLayer(map);
+  }, [selectedUseCase]);
+
+  const loadNDVILayer = (map: mapboxgl.Map) => {
+    fetch(`${API_URL}/geojson/ndvi`)
+      .then(res => res.json())
+      .then(geojson => {
+        map.addSource("ndvi-data", {
+          type: "geojson",
+          data: geojson
+        });
+
+        map.addLayer({
+          id: "ndvi-fill",
+          type: "fill",
+          source: "ndvi-data",
+          paint: {
+            "fill-color": [
+              "interpolate",
+              ["linear"],
+              ["get", "mean"],
+              0, "#ffffcc",
+              0.2, "#c2e699",
+              0.4, "#78c679",
+              0.6, "#31a354",
+              0.8, "#006837",
+            ],
+          }
+        }, "lahore-uc-lines");
+      });
+  };
+
+  const removeNDVILayer = (map: mapboxgl.Map) => {
+    if (map.getLayer("ndvi-fill")) map.removeLayer("ndvi-fill");
+    if (map.getSource("ndvi-data")) map.removeSource("ndvi-data");
+  };
+
+  const loadThermalLayer = (map: mapboxgl.Map) => {
+    fetch(`${API_URL}/geojson/thermal`)
+      .then(res => res.json())
+      .then(geojson => {
+        map.addSource("thermal-data", {
+          type: "geojson",
+          data: geojson
+        });
+
+        map.addLayer({
+          id: "thermal-fill",
+          type: "fill",
+          source: "thermal-data",
+          paint: {
+            "fill-color": [
+              "interpolate",
+              ["linear"],
+              ["get", "mean"],
+              285, "#313695",
+              288, "#4575b4",
+              291, "#74add1",
+              294, "#abd9e9",
+              297, "#e0f3f8",
+              300, "#ffffbf",
+              303, "#fee090",
+              306, "#fdae61",
+              309, "#f46d43",
+              312, "#d73027",
+              315, "#a50026"
+            ],
+          }
+        }, "lahore-uc-lines");
+      });
+  };
+
+  const removeThermalLayer = (map: mapboxgl.Map) => {
+    if (map.getLayer("thermal-fill")) map.removeLayer("thermal-fill");
+    if (map.getSource("thermal-data")) map.removeSource("thermal-data");
+  };
+
   const handleUseCaseChange = (value: string) => {
     setSelectedUseCase(value);
-    const selectedCase = USE_CASES.find(option => option.value === value);
-    if (selectedCase) {
-      setUseCaseLabel(selectedCase.label);
-    }
+    const selected = USE_CASES.find(option => option.value === value);
+    if (selected) setUseCaseLabel(selected.label);
   };
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Top Navigation Bar */}
       <div className="flex flex-col sm:flex-row items-center p-2 sm:p-4 border-b space-y-2 sm:space-y-0">
         <div className="flex flex-col sm:flex-row sm:space-x-2 w-full sm:w-auto">
           <Select value={selectedUseCase} onValueChange={handleUseCaseChange}>
@@ -107,7 +213,7 @@ export default function MapPage() {
               <SelectValue placeholder="Select Use Case" />
             </SelectTrigger>
             <SelectContent>
-              {USE_CASES.map((option) => (
+              {USE_CASES.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
@@ -118,41 +224,29 @@ export default function MapPage() {
       </div>
 
       <div className="flex flex-1 flex-col sm:flex-row">
-        {/* Sidebar for larger screens, Bottom Nav for mobile */}
         <div className="sm:w-56 bg-white border-r sm:flex sm:flex-col hidden">
           <div className="p-3 border-b">
             <Link href='/main/analysis/viewreport'>
-              <Button variant="outline" className="w-full justify-start">
-                View Report
-              </Button>
+              <Button variant="outline" className="w-full justify-start">View Report</Button>
             </Link>
           </div>
           <div className="p-3 border-b">
             <Link href='/main'>
-              <Button variant="outline" className="w-full justify-start">
-                Change Location
-              </Button>
+              <Button variant="outline" className="w-full justify-start">Change Location</Button>
             </Link>
           </div>
         </div>
 
-        {/* Bottom Navigation for Mobile */}
         <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2 z-10">
           <Link href='/main/analysis/viewreport'>
-            <Button variant="outline" size="sm" className="flex-1 mx-1">
-              View Report
-            </Button>
+            <Button variant="outline" size="sm" className="flex-1 mx-1">View Report</Button>
           </Link>
           <Link href='/main'>
-            <Button variant="outline" size="sm" className="flex-1 mx-1">
-              Change Location
-            </Button>
+            <Button variant="outline" size="sm" className="flex-1 mx-1">Change Location</Button>
           </Link>
         </div>
 
-        {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
-          {/* Top Controls for Analysis and Date */}
           <div className="flex flex-col sm:flex-row justify-between items-center p-2 border-b space-y-2 sm:space-y-0">
             <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
               <Button variant="outline" size="sm" className="w-full sm:w-auto">
@@ -190,11 +284,38 @@ export default function MapPage() {
               </Popover>
             </div>
           </div>
-          
-          {/* Map Container */}
-          <div className="flex-1 relative pb-16 sm:pb-0" ref={mapContainerRef}>
-            {/* Map will be rendered here by Mapbox GL JS */}
+
+          {/* Legend Section */}
+          <div className="absolute bottom-20 right-4 z-10 space-y-4 bg-white p-3 border rounded shadow-md text-sm max-w-xs">
+            {selectedUseCase === "ndvi-analysis" && (
+              <div>
+                <h4 className="font-semibold mb-1">NDVI Legend</h4>
+                <LegendItem color="#ffffcc" label="0 - 0.2 (Bare Soil)" />
+                <LegendItem color="#c2e699" label="0.2 - 0.4" />
+                <LegendItem color="#78c679" label="0.4 - 0.6" />
+                <LegendItem color="#31a354" label="0.6 - 0.8" />
+                <LegendItem color="#006837" label="0.8 - 1 (Vegetation)" />
+              </div>
+            )}
+            {selectedUseCase === "thermal-analysis" && (
+              <div>
+                <h4 className="font-semibold mb-1">Thermal Legend (K)</h4>
+                <LegendItem color="#313695" label="285-288" />
+                <LegendItem color="#4575b4" label="288-291" />
+                <LegendItem color="#74add1" label="291-294" />
+                <LegendItem color="#abd9e9" label="294-297" />
+                <LegendItem color="#e0f3f8" label="297-300" />
+                <LegendItem color="#ffffbf" label="300-303" />
+                <LegendItem color="#fee090" label="303-306" />
+                <LegendItem color="#fdae61" label="306-309" />
+                <LegendItem color="#f46d43" label="309-312" />
+                <LegendItem color="#d73027" label="312-315" />
+                <LegendItem color="#a50026" label=">315" />
+              </div>
+            )}
           </div>
+
+          <div className="flex-1 relative pb-16 sm:pb-0" ref={mapContainerRef}></div>
         </div>
       </div>
     </div>

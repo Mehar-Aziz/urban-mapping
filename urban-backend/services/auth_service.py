@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from database import get_db
+from database.database import get_db
 from models import User
 from passlib.context import CryptContext
 from pydantic import BaseModel

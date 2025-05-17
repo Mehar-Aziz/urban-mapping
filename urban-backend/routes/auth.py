@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from services.auth_service import hash_password, verify_password, create_access_token, generate_reset_token, verify_reset_token, hash_password
 from services.email_service import email_service
-from database import get_db
+from database.database import get_db
 from models import User, Project  # Add Project import here
 from datetime import timedelta, datetime  # Add datetime import here
 from pydantic import BaseModel, EmailStr

@@ -128,7 +128,7 @@ export default function MapPage() {
 
 
   const loadNDVILayer = (map: mapboxgl.Map) => {
-    fetch(`${API_URL}/geojson/ndvi`)
+    fetch(`${API_URL}/uc-data/ndvi`)
       .then(res => res.json())
       .then(geojson => {
         map.addSource("ndvi-data", {
@@ -144,12 +144,16 @@ export default function MapPage() {
             "fill-color": [
               "interpolate",
               ["linear"],
-              ["get", "mean"],
-              0, "#ffffcc",
-              0.2, "#c2e699",
-              0.4, "#78c679",
-              0.6, "#31a354",
-              0.8, "#006837",
+              ["get", "NDVI"],
+              0.0, '#ffffcc',  // Very pale green (bare soil/urban)
+              0.1, '#e6f5b3',  // Light lime
+              0.2, '#1c7d3e',  // Pale green
+              0.3, '#9ed97f',  // Medium-light green
+              0.4, '#006837',  // Fresh green
+              0.5, '#56bf4b',  // Healthy vegetation
+              0.6, '#31a354',  // Dense vegetation
+              0.7, '#1c7d3e',  // Mature forest
+              0.8, '#006837' 
             ],
           }
         }, "lahore-uc-lines");

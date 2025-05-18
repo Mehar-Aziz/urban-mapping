@@ -127,38 +127,64 @@ export default function MapPage() {
 }, [selectedUseCase]);
 
 
-  const loadNDVILayer = (map: mapboxgl.Map) => {
-    fetch(`${API_URL}/uc-data/ndvi`)
-      .then(res => res.json())
-      .then(geojson => {
-        map.addSource("ndvi-data", {
-          type: "geojson",
-          data: geojson
-        });
-
-        map.addLayer({
-          id: "ndvi-fill",
-          type: "fill",
-          source: "ndvi-data",
-          paint: {
-            "fill-color": [
-              "interpolate",
-              ["linear"],
-              ["get", "NDVI"],
-              0.0, '#ffffcc',  // Very pale green (bare soil/urban)
-              0.1, '#e6f5b3',  // Light lime
-              0.2, '#1c7d3e',  // Pale green
-              0.3, '#9ed97f',  // Medium-light green
-              0.4, '#006837',  // Fresh green
-              0.5, '#56bf4b',  // Healthy vegetation
-              0.6, '#31a354',  // Dense vegetation
-              0.7, '#1c7d3e',  // Mature forest
-              0.8, '#006837' 
-            ],
-          }
-        }, "lahore-uc-lines");
+ const loadNDVILayer = (map: mapboxgl.Map) => { 
+  fetch(`${API_URL}/uc-data/ndvi`)
+    .then(res => res.json())
+    .then(geojson => {
+      map.addSource("ndvi-data", {
+        type: "geojson",
+        data: geojson
       });
-  };
+
+      map.addLayer({
+        id: "ndvi-fill",
+        type: "fill",
+        source: "ndvi-data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "NDVI"],
+            0.0, '#ffffcc',
+            0.1, '#e6f5b3',
+            0.2, '#1c7d3e',
+            0.3, '#9ed97f',
+            0.4, '#006837',
+            0.5, '#56bf4b',
+            0.6, '#31a354',
+            0.7, '#1c7d3e',
+            0.8, '#006837'
+          ],
+          
+        }
+      }, "lahore-uc-lines");
+
+      // Add a popup instance
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
+
+      // Show popup on mouse move
+      map.on("mousemove", "ndvi-fill", (e) => {
+        if (e.features && e.features.length > 0) {
+          const feature = e.features[0];
+          const coordinates = e.lngLat;
+          const ndvi = feature.properties?.NDVI;
+
+          popup
+            .setLngLat(coordinates)
+            .setHTML(`<strong>NDVI:</strong> ${ndvi !== undefined ? parseFloat(ndvi).toFixed(2) : "N/A"}`)
+            .addTo(map);
+        }
+      });
+
+      // Remove popup on mouse leave
+      map.on("mouseleave", "ndvi-fill", () => {
+        popup.remove();
+      });
+    });
+};
 
   const removeNDVILayer = (map: mapboxgl.Map) => {
     if (map.getLayer("ndvi-fill")) map.removeLayer("ndvi-fill");
@@ -166,7 +192,7 @@ export default function MapPage() {
   };
 
   const loadThermalLayer = (map: mapboxgl.Map) => {
-    fetch(`${API_URL}/geojson/thermal`)
+    fetch(`${API_URL}/uc-data/thermal`)
       .then(res => res.json())
       .then(geojson => {
         map.addSource("thermal-data", {
@@ -182,21 +208,44 @@ export default function MapPage() {
             "fill-color": [
               "interpolate",
               ["linear"],
-              ["get", "mean"],
-              285, "#313695",
-              288, "#4575b4",
-              291, "#74add1",
-              294, "#abd9e9",
-              297, "#e0f3f8",
-              300, "#ffffbf",
-              303, "#fee090",
-              306, "#fdae61",
-              309, "#f46d43",
-              312, "#d73027",
-              315, "#a50026"
+              ["get", "LST"],
+              20, '#2b0000',   // Dark burgundy (coolest)
+            25, '#800026',   // Dark red
+            30, '#bd0026',   // Rich red
+            35, '#e31a1c',   // Bright red
+            40, '#fc4e2a',   // Orange-red
+            45, '#fd8d3c',   // Orange
+            50, '#feb24c',   // Dark yellow
+            55, '#fed976',   // Medium yellow
+            60, '#ffff00'
             ],
           }
         }, "lahore-uc-lines");
+        
+      // Add a popup instance
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
+
+      // Show popup on mouse move
+      map.on("mousemove", "thermal-fill", (e) => {
+        if (e.features && e.features.length > 0) {
+          const feature = e.features[0];
+          const coordinates = e.lngLat;
+          const lst = feature.properties?.LST;
+
+          popup
+            .setLngLat(coordinates)
+            .setHTML(`<strong>NDVI:</strong> ${lst!== undefined ? parseFloat(lst).toFixed(2) : "N/A"}`)
+            .addTo(map);
+        }
+      });
+
+      // Remove popup on mouse leave
+      map.on("mouseleave", "ndvi-fill", () => {
+        popup.remove();
+      });
       });
   };
 
@@ -348,18 +397,16 @@ const removeAirQualityLayer = (map: mapboxgl.Map) => {
             )}
             {selectedUseCase === "thermal-analysis" && (
               <div>
-                <h4 className="font-semibold mb-1">Thermal Legend (K)</h4>
-                <LegendItem color="#313695" label="285-288" />
-                <LegendItem color="#4575b4" label="288-291" />
-                <LegendItem color="#74add1" label="291-294" />
-                <LegendItem color="#abd9e9" label="294-297" />
-                <LegendItem color="#e0f3f8" label="297-300" />
-                <LegendItem color="#ffffbf" label="300-303" />
-                <LegendItem color="#fee090" label="303-306" />
-                <LegendItem color="#fdae61" label="306-309" />
-                <LegendItem color="#f46d43" label="309-312" />
-                <LegendItem color="#d73027" label="312-315" />
-                <LegendItem color="#a50026" label=">315" />
+                <h4 className="font-semibold mb-1">Thermal Legend (C)</h4>
+                <LegendItem color="#2b0000" label="20 - 25 (Cool)" />
+    <LegendItem color="#800026" label="25 - 30" />
+    <LegendItem color="#bd0026" label="30 - 35" />
+    <LegendItem color="#e31a1c" label="35 - 40" />
+    <LegendItem color="#fc4e2a" label="40 - 45" />
+    <LegendItem color="#fd8d3c" label="45 - 50" />
+    <LegendItem color="#feb24c" label="50 - 55" />
+    <LegendItem color="#fed976" label="55 - 60" />
+    <LegendItem color="#ffff00" label="60+ (Hot)" />
               </div>
             )}
             {selectedUseCase === "air-quality-analysis" && (

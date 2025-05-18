@@ -255,7 +255,7 @@ export default function MapPage() {
   };
 
   const loadAirQualityLayer = (map: mapboxgl.Map) => {
-  fetch(`${API_URL}/geojson/air-quality`)
+  fetch(`${API_URL}/uc-data/air_quality`)
     .then(res => res.json())
     .then(geojson => {
       map.addSource("air-quality-data", {
@@ -272,14 +272,39 @@ export default function MapPage() {
             "interpolate",
             ["linear"],
             ["get", "AQI"],
-      0, "#a1dab4",     // Good
-      50, "#41b6c4",    // Moderate
-      100, "#2c7fb8",   // Unhealthy for Sensitive Groups
-      231.82, "#253494",   // Unhealthy
-      232.21, "#fed976",   // Very Unhealthy
-      300, "#fd8d3c"],
+      234.0, '#8F3F97',
+        234.1, '#6A2D7A',
+        234.2, '#451C5D',
+        234.3, '#2A0A45',
+        234.4, '#1A0438',
+        234.5, '#7E0023'// Hazardous (300+)
+          ],
         }
       }, "lahore-uc-lines");
+      // Add a popup instance
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
+
+      // Show popup on mouse move
+      map.on("mousemove", "air_quality-fill", (e) => {
+        if (e.features && e.features.length > 0) {
+          const feature = e.features[0];
+          const coordinates = e.lngLat;
+          const aqi = feature.properties?.AQI;
+
+          popup
+            .setLngLat(coordinates)
+            .setHTML(`<strong>NDVI:</strong> ${aqi!== undefined ? parseFloat(aqi).toFixed(2) : "N/A"}`)
+            .addTo(map);
+        }
+      });
+
+      // Remove popup on mouse leave
+      map.on("mouseleave", "ndvi-fill", () => {
+        popup.remove();
+      });
     });
 };
 

@@ -14,7 +14,8 @@ import { Label } from "@/components/ui/label"
 import { Dispatch, SetStateAction, useState } from "react"
 import { useRouter } from "next/navigation"
 import axios from "axios"
-import { toast } from "sonner"; // Assuming you have toast component
+import { toast } from "sonner";
+
 
 const API_URL = "http://127.0.0.1:8000";
 
@@ -51,7 +52,7 @@ export default function CreateProjectModal({ open, setOpen }: { open: boolean, s
        "Success",{
         description: "Project created successfully"}
       );
-      
+      router.push('/main');
       // Refresh the page or update the UI
       router.refresh();
     } catch (error: any) {

@@ -237,7 +237,7 @@ export default function MapPage() {
 
           popup
             .setLngLat(coordinates)
-            .setHTML(`<strong>NDVI:</strong> ${lst!== undefined ? parseFloat(lst).toFixed(2) : "N/A"}`)
+            .setHTML(`<strong>Temperature:</strong> ${lst!== undefined ? parseFloat(lst).toFixed(2) : "N/A"}`)
             .addTo(map);
         }
       });
@@ -288,7 +288,7 @@ export default function MapPage() {
       });
 
       // Show popup on mouse move
-      map.on("mousemove", "air_quality-fill", (e) => {
+      map.on("mousemove", "air-quality-fill", (e) => {
         if (e.features && e.features.length > 0) {
           const feature = e.features[0];
           const coordinates = e.lngLat;
@@ -296,7 +296,7 @@ export default function MapPage() {
 
           popup
             .setLngLat(coordinates)
-            .setHTML(`<strong>NDVI:</strong> ${aqi!== undefined ? parseFloat(aqi).toFixed(2) : "N/A"}`)
+            .setHTML(`<strong>AQI:</strong> ${aqi!== undefined ? parseFloat(aqi).toFixed(2) : "N/A"}`)
             .addTo(map);
         }
       });

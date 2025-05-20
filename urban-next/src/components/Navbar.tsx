@@ -81,7 +81,9 @@ export default function Navbar() {
                     <a>My Profile</a>
                   </DropdownMenuItem>
                 </Link>
+                <Link href="/login" passHref legacyBehavior>
                 <DropdownMenuItem>Logout</DropdownMenuItem>
+                </Link>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

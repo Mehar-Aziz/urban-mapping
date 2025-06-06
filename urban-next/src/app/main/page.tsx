@@ -1,5 +1,6 @@
 "use client";
 
+import MapboxMap from "@/components/mapbox/LULC";
 import Navbar from "@/components/Navbar";
 import dynamic from "next/dynamic";
 
@@ -10,6 +11,7 @@ export default function MainPage() {
     <div>
       <Navbar/>
       <MapBox />
+      {/*<MapboxMap/>*/}
     </div>
   );
 }

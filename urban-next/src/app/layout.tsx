@@ -21,7 +21,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={albertSans.variable}>
-      <body className="${albertSans.variable} font-sans">{children}</body>
+      <body className={`${albertSans.variable} font-sans`}  suppressHydrationWarning={true}>{children}</body>
     </html>
   );
 }

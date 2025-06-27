@@ -29,7 +29,6 @@ export default function Home() {
       [year]: !prev[year]
     }));
   };
-
   return (
     <div className="relative w-screen h-screen overflow-hidden">
       <TimeSeriesLandCoverMap 

@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation"
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isMobile, setIsMobile] = useState(false)
   const pathname = usePathname()
 
@@ -51,6 +52,12 @@ export default function Navbar() {
               className={`${pathname === '/main' ? 'text-green-800 font-medium' : 'text-gray-700'} hover:text-green-800`}
             >
               Map
+            </Link>
+            <Link 
+              href="/land-cover-classification" 
+              className={`${pathname === '/main' ? 'text-green-800 font-medium' : 'text-gray-700'} hover:text-green-800`}
+            >
+              Land Cover
             </Link>
             <Link 
               href="/help" 

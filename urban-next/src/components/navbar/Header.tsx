@@ -9,7 +9,7 @@ import { CreateProjectButtonProps, MobileNavigationProps, MobileNavItemProps } f
 import { DESKTOP_NAV_ITEMS, MOBILE_NAV_ITEMS } from "@/constants"
 import Link from "next/link"
 import { DesktopNavLinkProps } from "@/types"
-import { UserDropdownMenu } from "@/components/navbar/UserDropDown"
+import { UserDropdownMenu } from "@/components/navbar/userDropDown"
 
 export const DesktopNavLink = ({ href, label, isActive }: DesktopNavLinkProps) => (
   <Link 

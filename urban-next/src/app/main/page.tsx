@@ -1,6 +1,6 @@
 "use client";
 
-import Navbar from "@/components/Navbar";
+import Navbar from "@/components/navbar/Index";
 import dynamic from "next/dynamic";
 
 const MapBox = dynamic(() => import("@/components/mapbox/MapBox"), { ssr: false });

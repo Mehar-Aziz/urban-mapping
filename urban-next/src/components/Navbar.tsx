@@ -2,170 +2,235 @@
 
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuItem 
+} from "@/components/ui/dropdown-menu"
 import { Plus, Home, Map, HelpCircle, User } from "lucide-react"
 import { useState, useEffect } from "react"
 import CreateProjectModal from "./home/CreateProjectModal"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
 
+// Types
+interface NavItem {
+  href: string
+  label: string
+  icon: typeof Home
+}
+
+// Constants
+const BRAND_COLOR = '#00674F'
+const BRAND_COLOR_HOVER = '#00674F30'
+
+const DESKTOP_NAV_ITEMS: NavItem[] = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/main', label: 'Map', icon: Map },
+  { href: '/land-cover-classification', label: 'Land Cover', icon: Map },
+  { href: '/help', label: 'Help', icon: HelpCircle },
+]
+
+const MOBILE_NAV_ITEMS: NavItem[] = [
+  { href: '/', label: 'Home', icon: Home },
+  { href: '/main', label: 'Map', icon: Map },
+  { href: '/help', label: 'Help', icon: HelpCircle },
+  { href: '/profile', label: 'Profile', icon: User },
+]
+
+// Custom hooks can be moved to separate files when needed
+
+// Components
+const Logo = () => (
+  <div className="text-xl font-bold text-[#00674F] mx-auto md:mx-0">
+    Geomapping
+  </div>
+)
+
+interface DesktopNavLinkProps {
+  href: string
+  label: string
+  isActive: boolean
+}
+
+const DesktopNavLink = ({ href, label, isActive }: DesktopNavLinkProps) => (
+  <Link 
+    href={href} 
+    className={cn(
+      "transition-colors hover:text-green-800",
+      isActive ? "text-green-800 font-medium" : "text-gray-700"
+    )}
+  >
+    {label}
+  </Link>
+)
+
+const DesktopNavigation = ({ pathname }: { pathname: string }) => (
+  <nav className="hidden md:flex space-x-6">
+    {DESKTOP_NAV_ITEMS.map((item) => (
+      <DesktopNavLink
+        key={item.href}
+        href={item.href}
+        label={item.label}
+        isActive={pathname === item.href}
+      />
+    ))}
+  </nav>
+)
+
+interface CreateProjectButtonProps {
+  onClick: () => void
+  variant?: 'desktop' | 'mobile'
+}
+
+const CreateProjectButton = ({ onClick, variant = 'desktop' }: CreateProjectButtonProps) => {
+  if (variant === 'mobile') {
+    return (
+      <Button 
+        onClick={onClick}
+        variant="outline"
+        className={cn(
+          "rounded-full h-12 w-12 p-0 flex items-center justify-center",
+          "border-none shadow-md transition-colors",
+          `bg-[${BRAND_COLOR}] text-white hover:bg-[${BRAND_COLOR_HOVER}]`
+        )}
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
+    )
+  }
+
+  return (
+    <Button 
+      variant="outline" 
+      onClick={onClick}
+      className="transition-colors"
+    >
+      <Plus className="w-4 h-4 mr-2" /> 
+      Create Project
+    </Button>
+  )
+}
+
+const UserDropdownMenu = () => (
+  <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <Avatar className="cursor-pointer h-10 w-10 transition-opacity hover:opacity-80">
+        <AvatarFallback>U</AvatarFallback>
+      </Avatar>
+    </DropdownMenuTrigger>
+    <DropdownMenuContent align="end">
+      <Link href="/profile" passHref legacyBehavior>
+        <DropdownMenuItem asChild>
+          <a>My Profile</a>
+        </DropdownMenuItem>
+      </Link>
+      <Link href="/login" passHref legacyBehavior>
+        <DropdownMenuItem>Logout</DropdownMenuItem>
+      </Link>
+    </DropdownMenuContent>
+  </DropdownMenu>
+)
+
+const DesktopActions = ({ onCreateProject }: { onCreateProject: () => void }) => (
+  <div className="hidden md:flex items-center space-x-4">
+    <CreateProjectButton onClick={onCreateProject} />
+    <UserDropdownMenu />
+  </div>
+)
+
+interface MobileNavItemProps {
+  href: string
+  label: string
+  icon: typeof Home
+  isActive: boolean
+}
+
+const MobileNavItem = ({ href, label, icon: Icon, isActive }: MobileNavItemProps) => (
+  <Link 
+    href={href} 
+    className={cn(
+      "flex flex-col items-center justify-center transition-colors hover:text-green-800",
+      `text-[${BRAND_COLOR}]`,
+      isActive && "font-medium"
+    )}
+  >
+    <Icon className={cn("w-6 h-6", isActive && `fill-[${BRAND_COLOR}]`)} />
+    <span className="text-xs mt-1">{label}</span>
+    {isActive && (
+      <div className={cn("h-1 w-6 rounded-full mt-1", `bg-[${BRAND_COLOR}]`)} />
+    )}
+  </Link>
+)
+
+interface MobileNavigationProps {
+  pathname: string
+  onCreateProject: () => void
+}
+
+const MobileNavigation = ({ pathname, onCreateProject }: MobileNavigationProps) => (
+  <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t border-gray-200">
+    <div className="flex justify-around items-center h-16">
+      {MOBILE_NAV_ITEMS.slice(0, 2).map((item) => (
+        <MobileNavItem
+          key={item.href}
+          href={item.href}
+          label={item.label}
+          icon={item.icon}
+          isActive={pathname === item.href}
+        />
+      ))}
+      
+      <CreateProjectButton onClick={onCreateProject} variant="mobile" />
+      
+      {MOBILE_NAV_ITEMS.slice(2).map((item) => (
+        <MobileNavItem
+          key={item.href}
+          href={item.href}
+          label={item.label}
+          icon={item.icon}
+          isActive={pathname === item.href}
+        />
+      ))}
+    </div>
+  </nav>
+)
+
+const Header = ({ pathname, onCreateProject }: { pathname: string; onCreateProject: () => void }) => (
+  <header className="sticky top-0 z-40 bg-white shadow-md">
+    <div className="flex items-center justify-between px-4 md:px-6 py-4">
+      <Logo />
+      <DesktopNavigation pathname={pathname} />
+      <DesktopActions onCreateProject={onCreateProject} />
+    </div>
+  </header>
+)
+
+// Main component
 export default function Navbar() {
-  const [open, setOpen] = useState(false)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isMobile, setIsMobile] = useState(false)
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false)
   const pathname = usePathname()
 
-  // Check screen size on mount and when window resizes
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    // Initial check
-    checkScreenSize()
-
-    // Add event listener
-    window.addEventListener('resize', checkScreenSize)
-
-    // Clean up
-    return () => window.removeEventListener('resize', checkScreenSize)
-  }, [])
+  const handleCreateProject = () => setIsCreateProjectOpen(true)
 
   return (
     <>
-      {/* Top header with logo and desktop navigation */}
-      <header className="sticky top-0 z-40 bg-white shadow-md">
-        <div className="flex items-center justify-between px-4 md:px-6 py-4">
-          {/* Logo */}
-          <div className="text-xl font-bold text-[#00674F] mx-auto md:mx-0">Geomapping</div>
+      <Header pathname={pathname} onCreateProject={handleCreateProject} />
+      
+      <MobileNavigation 
+        pathname={pathname} 
+        onCreateProject={handleCreateProject} 
+      />
 
-          {/* Desktop Nav Links */}
-          <nav className="hidden md:flex space-x-6">
-            <Link 
-              href="/" 
-              className={`${pathname === '/' ? 'text-green-800 font-medium' : 'text-gray-700'} hover:text-green-800`}
-            >
-              Home
-            </Link>
-            <Link 
-              href="/main" 
-              className={`${pathname === '/main' ? 'text-green-800 font-medium' : 'text-gray-700'} hover:text-green-800`}
-            >
-              Map
-            </Link>
-            <Link 
-              href="/land-cover-classification" 
-              className={`${pathname === '/main' ? 'text-green-800 font-medium' : 'text-gray-700'} hover:text-green-800`}
-            >
-              Land Cover
-            </Link>
-            <Link 
-              href="/help" 
-              className={`${pathname === '/help' ? 'text-green-800 font-medium' : 'text-gray-700'} hover:text-green-800`}
-            >
-              Help
-            </Link>
-          </nav>
+      {/* Mobile bottom padding spacer */}
+      <div className="md:hidden" />
 
-          {/* Right-side actions for desktop */}
-          <div className="hidden md:flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" /> Create Project
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer h-10 w-10">
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <Link href="/profile" passHref legacyBehavior>
-                  <DropdownMenuItem asChild>
-                    <a>My Profile</a>
-                  </DropdownMenuItem>
-                </Link>
-                <Link href="/login" passHref legacyBehavior>
-                <DropdownMenuItem>Logout</DropdownMenuItem>
-                </Link>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </header>
-
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white shadow-lg border-t border-gray-200">
-        <div className="flex justify-around items-center h-16">
-          <Link 
-            href="/" 
-            className={`flex flex-col items-center justify-center hover:text-green-800 ${
-              pathname === '/' 
-                ? 'text-[#00674F] font-medium' 
-                : 'text-[#00674F]'
-            }`}
-          >
-            <Home className={`w-6 h-6 ${pathname === '/' ? 'fill-[#00674F]' : ''}`} />
-            <span className="text-xs mt-1">Home</span>
-            {pathname === '/' && <div className="h-1 w-6 bg-[#00674F] rounded-full mt-1"></div>}
-          </Link>
-          
-          <Link 
-            href="/main" 
-            className={`flex flex-col items-center justify-center hover:text-green-800 ${
-              pathname === '/main' 
-                ? 'text-[#00674F] font-medium' 
-                : 'text-[#00674F]'
-            }`}
-          >
-            <Map className={`w-6 h-6 ${pathname === '/main' ? 'fill-[#00674F]' : ''}`} />
-            <span className="text-xs mt-1">Map</span>
-            {pathname === '/main' && <div className="h-1 w-6 bg-[#00674F] rounded-full mt-1"></div>}
-          </Link>
-          
-          <Button 
-            onClick={() => setOpen(true)}
-            variant="outline"
-            className="rounded-full h-12 w-12 p-0 flex items-center justify-center bg-[#00674F] text-white border-none shadow-md hover:bg-[#00674F30]"
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
-          
-          <Link 
-            href="/help" 
-            className={`flex flex-col items-center justify-center hover:text-green-800 ${
-              pathname === '/help' 
-                ? 'text-[#00674F] font-medium' 
-                : 'text-[#00674F]'
-            }`}
-          >
-            <HelpCircle className={`w-6 h-6 ${pathname === '/help' ? 'fill-[#00674F]' : ''}`} />
-            <span className="text-xs mt-1">Help</span>
-            {pathname === '/help' && <div className="h-1 w-6 bg-[#00674F] rounded-full mt-1"></div>}
-          </Link>
-          
-          <Link 
-            href="/profile" 
-            className={`flex flex-col items-center justify-center hover:text-green-800 ${
-              pathname === '/profile' 
-                ? 'text-[#00674F] font-medium' 
-                : 'text-[#00674F]'
-            }`}
-          >
-            <User className={`w-6 h-6 ${pathname === '/profile' ? 'fill-[#00674F]' : ''}`} />
-            <span className="text-xs mt-1">Profile</span>
-            {pathname === '/profile' && <div className="h-1 w-6 bg-[#00674F] rounded-full mt-1"></div>}
-          </Link>
-        </div>
-      </nav>
-
-      {/* Add padding to the bottom of the page on mobile to account for the bottom navbar */}
-      <div className="md:hidden"></div>
-
-      <CreateProjectModal open={open} setOpen={setOpen} />
+      <CreateProjectModal 
+        open={isCreateProjectOpen} 
+        setOpen={setIsCreateProjectOpen} 
+      />
     </>
   )
 }

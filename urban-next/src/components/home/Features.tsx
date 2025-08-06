@@ -1,38 +1,38 @@
 export const features = [
     {
-      title: "Greenery Analysis",
+      title: "Land Cover Analysis",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/landcover.png"
     },
     {
-      title: "Greenery Analysis",
+      title: "Urban Analysis",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/urban.png"
     },
     {
-      title: "Greenery Analysis",
+      title: "Water Analysis",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/water.png"
     },
     {
-      title: "Greenery Analysis",
+      title: "Trees Analysis",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/green.png"
     },
     {
-      title: "Greenery Analysis",
+      title: "Cropland Analysis",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/crop.png"
     }
   ,
   {
-      title: "Greenery Analysis",
+      title: "Snow & Ice analysis",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/snow.png"
     },
     {
-      title: "Greenery Analysis",
+      title: "Loss and Gain ",
       description: "Identify green patches and assess vegetation coverage",
-      image: "/greenery.png"
+      image: "/images/loss.png"
     }
   ]

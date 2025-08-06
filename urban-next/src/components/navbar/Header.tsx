@@ -43,17 +43,28 @@ export const CreateProjectButton = ({ onClick, variant = 'desktop' }: CreateProj
       <Button 
         onClick={onClick}
         variant="outline"
-        className={cn(
-          "rounded-full h-12 w-12 p-0 flex items-center justify-center",
-          "border-none shadow-md transition-colors",
-          `bg-[${BRAND_COLOR}] text-white hover:bg-[${BRAND_COLOR_HOVER}]`
-        )}
+        className="rounded-full h-12 w-12 p-0 flex items-center justify-center bg-[#00674F] text-white border-none shadow-md hover:bg-white hover:text-black"
       >
         <Plus className="w-6 h-6" />
       </Button>
     )
   }
+
+  // ✅ Desktop button return
+  return (
+    <Button 
+      onClick={onClick}
+      className={cn(
+        `bg-[${BRAND_COLOR}] text-white hover:bg-[${BRAND_COLOR_HOVER}]`,
+        "transition-colors"
+      )}
+    >
+      <Plus className="w-4 h-4 mr-2" />
+      Create Project
+    </Button>
+  )
 }
+
 
 
 export const DesktopActions = ({ onCreateProject }: { onCreateProject: () => void }) => (

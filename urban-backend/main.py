@@ -8,6 +8,8 @@ from fastapi.responses import FileResponse
 import os
 import database, json
 from database.connect_db import connect_db
+from routes.lulc import router as lulc_router
+
 
 
 Base.metadata.create_all(bind=engine)
@@ -30,8 +32,9 @@ app.add_middleware(
 )
 db=connect_db
 app.include_router(auth.router)
-# Include the KML routes
 app.include_router(kml_router, prefix="/api")
+app.include_router(lulc_router, prefix="/api")
+
 
 #lahore UCs
 @app.get("/geojson/lahore-ucs")

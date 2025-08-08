@@ -43,3 +43,46 @@ export interface MobileNavigationProps {
   pathname: string
   onCreateProject: () => void
 }
+
+////////////PREDICTIONS///////////////////
+export interface PredictionPoint {
+  latitude: number;
+  longitude: number;
+  predicted_class: string;
+  confidence: number;
+}
+
+export interface PolygonCoordinate {
+  lat: number;
+  lon: number;
+}
+
+export interface ApiPayload {
+  polygon: PolygonCoordinate[];
+  model?: string;
+}
+
+export interface ClassColors {
+  [key: string]: string;
+}
+export interface ClassCounts {
+  [key: string]: number;
+}
+
+export interface MapRefs {
+  mapContainer: React.RefObject<HTMLDivElement>;
+  map: React.RefObject<mapboxgl.Map | null>;
+  draw: React.RefObject<MapboxDraw | null>;
+  controlContainer: React.RefObject<HTMLDivElement | null>;
+}
+
+export interface MapState {
+  isLoading: boolean;
+  error: string | null;
+  predictions: PredictionPoint[];
+  selectedModel: string;
+  hasDrawnPolygon: boolean;
+  drawMode: 'idle' | 'drawing';
+}
+
+export type DrawEventHandler = (e: any) => void;

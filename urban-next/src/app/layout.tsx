@@ -1,6 +1,8 @@
 import { Albert_Sans } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
+import 'mapbox-gl/dist/mapbox-gl.css';
+//import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 const albertSans = Albert_Sans({
   subsets: ["latin"],

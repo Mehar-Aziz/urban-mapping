@@ -140,3 +140,8 @@
   display: none;             /* Chrome, Safari, Opera */
 }
 
+.mapboxgl-ctrl-top-right {
+  top: 10px;
+  right: 10px;
+}
+

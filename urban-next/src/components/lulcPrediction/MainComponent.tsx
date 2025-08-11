@@ -158,41 +158,39 @@ export default function LandCoverPredictionMap() {
   // Get class counts for legend
   const classCounts = getClassCounts(state.predictions);
 
-return (
-  <div className="w-full h-screen bg-gray-50">
-    <div className="w-full h-full flex">
-      {/* Sidebar Control Panel */}
-      <ControlPanel
-        state={state}
-        classCounts={classCounts}
-        onModelChange={handleModelChange}
-        onClearAll={clearAll}
-      />
+  return (
+    <div className="w-full bg-gray-50">
+      <div className="w-full h-full flex">
+        {/* Sidebar Control Panel */}
+        <ControlPanel
+          state={state}
+          classCounts={classCounts}
+          onModelChange={handleModelChange}
+          onClearAll={clearAll}
+        />
 
-      {/* Map Section with controls overlaid */}
-      <div className="relative flex-1 h-screen">
-        {/* Map Container */}
-        <MapComponent mapContainer={refs.mapContainer} state={state} />
+        {/* Map Section with controls overlaid */}
+        <div className="relative flex-1 h-[87.5vh]">
+          {/* Map Container */}
+          <MapComponent mapContainer={refs.mapContainer} state={state} />
 
-        {/* Controls Overlaid on Map */}
-        <div className="absolute top-4 left-4 z-10">
-          <MapControls
-            drawMode={state.drawMode}
-            onDraw={() => {
-              refs.draw.current?.changeMode("draw_polygon");
-              setDrawMode("drawing");
-            }}
-            onCancel={() => {
-              refs.draw.current?.changeMode("simple_select");
-              setDrawMode("idle");
-            }}
-            onClear={clearAll}
-          />
+          {/* Controls Overlaid on Map */}
+          <div className="absolute top-4 left-4 z-10">
+            <MapControls
+              drawMode={state.drawMode}
+              onDraw={() => {
+                refs.draw.current?.changeMode("draw_polygon");
+                setDrawMode("drawing");
+              }}
+              onCancel={() => {
+                refs.draw.current?.changeMode("simple_select");
+                setDrawMode("idle");
+              }}
+              onClear={clearAll}
+            />
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
-
-
+  );
 }

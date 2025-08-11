@@ -72,17 +72,17 @@ class GEEConfig:
     ]
     # Class names mapping
     CLASS_NAMES = {
-        0: "Water",
-        1: "Urban",
-        2: "Barren",
-        3: "Forest",
-        4: "Grassland",
-        5: "Agriculture",
-        6: "Wetland",
-        7: "Scrubland",
-        8: "Snow",
-        9: "Cloud",
-        10: "Shadow"
+        0: "Tree cover",
+        1: "Shrubland",
+        2: "GrassLand",
+        3: "Cropland",
+        4: "Built-up",
+        5: "Bare/sparse vegetaion",
+        6: "Snow and ice",
+        7: "Permanet water bodies",
+        8: "Herbaceous wetland",
+        9: "Mangroves",
+        10: "Moss and lichen",
     }
 
 # Initialize GEE
